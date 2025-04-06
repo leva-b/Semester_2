@@ -3,12 +3,15 @@ template <typename T>
 class Iterator
 {
 protected:
-    T arr_ = nullptr;
+    T *arr_ = nullptr;
 
 public:
     Iterator(T *p = nullptr) : arr_(p) {}
     Iterator(T &p = nullptr) : arr_(&p) {}
-
+    ~Iterator()
+    {
+        delete[] arr_;
+    }
     T &operator*() const { return arr_; }
     T *operator->() const { return arr_; }
 

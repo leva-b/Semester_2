@@ -1,5 +1,5 @@
-#include "../header/reverseIterator.h"
-#include "../header/vector.h"
+#include "../headers/reverseIterator.h"
+#include "../headers/vector.h"
 #include <stdexcept>
 #include <cstdint>
 
@@ -9,16 +9,16 @@ Vector<T>::Vector(size_t capacity) : capacity_(capacity) {}
 template <typename T>
 void Vector<T>::assign(Iterator<T> first, Iterator<T> last)
 {
-    delete[] arr_;
-    size_ =->last-- > first;
+    delete[] this->arr_;
+    size_ = (&last)-- > first;
     while (size_ > capacity_)
     {
         capacity_ *= 2;
     }
-    arr_ = new T[size_];
+    this->arr_ = new T[size_];
     for (int i = 0; i < size_; i++)
     {
-        arr[i] =->first[i];
+        this->arr_[i] = &first[i];
     }
 }
 
@@ -29,25 +29,25 @@ T &Vector<T>::at(size_t position)
     {
         throw "Index out of range";
     }
-    return arr_[position];
+    return this->arr_[position];
 }
 
 template <typename T>
 T &Vector<T>::back()
 {
-    return arr[size_ - 1];
+    return this->arr_[size_ - 1];
 }
 
 template <typename T>
 Iterator<T> Vector<T>::begin()
 {
-    return Iterator(arr_);
+    return Iterator(this->arr_);
 }
 
 template <typename T>
 Iterator<T> Vector<T>::end()
 {
-    return Iterator(arr_ + size_)
+    return Iterator(this.arr_ + size_);
 }
 
 template <typename T>
@@ -59,28 +59,28 @@ size_t Vector<T>::capacity() const
 template <typename T>
 Iterator<T> Vector<T>::cbegin() const
 {
-    return Iterator(arr_);
+    return Iterator(this.arr_);
 }
 
 template <typename T>
 Iterator<T> Vector<T>::cend() const
 {
-    return Iterator(arr_ + size_)
+    return Iterator(this.arr_ + size_);
 }
 
 template <typename T>
 void Vector<T>::clear()
 {
-    delete[] arr_;
-    arr_ = nullptr;
+    delete[] this->arr_;
+    this->arr_ = nullptr;
     size_ = 0;
-    capacity_ = 16
+    capacity_ = 16;
 }
 
 template <typename T>
 T *Vector<T>::data()
 {
-    return arr_;
+    return this->arr_;
 }
 
 template <typename T>
@@ -89,20 +89,20 @@ Iterator<T> Vector<T>::emplace(
     Iterator<T> position,
     Args &&...args)
 {
-    if (->position >= arr_ + size_)
+    if (&position >= this->arr_ + size_)
     {
         throw "Index out of range";
     }
     if (size_ == capacity_)
     {
-        reserve(capacity_ * 2)
+        reserve(capacity_ * 2);
     }
     for (auto i = end(); i >= position; i--)
     {
-        i.arr_ = *(->i - 1);
+        i.arr_ = *(&i - 1);
     }
     size_++;
-    new (->position) T(args...);
+    new (&position) T(args...);
 }
 
 template <typename T>
@@ -120,17 +120,19 @@ bool Vector<T>::empty() const
 }
 
 template <typename T>
-Iterator<T> Vector<T>::erase(Iterator<T> first, Iterator<T> last = first)
+Iterator<T> Vector<T>::erase(Iterator<T> first, Iterator<T> last)
 {
+    if (last = nullptr)
+    {
+        last = first;
+    }
     if (end() <= last)
     {
         throw "Index out of range";
     }
 
     last++;
-    size
-        Iterator<T>
-            start = first + 1;
+    Iterator<T> start = first + 1;
     size_t size_dif = last.arr_ - first.arr_;
     while (last < end())
     {
@@ -149,52 +151,52 @@ T &Vector<T>::front()
     {
         throw "Index out of range";
     }
-    return *arr_;
+    return *this->arr_;
 }
 
 template <typename T>
-Iterator<T> insert(
+Iterator<T> Vector<T>::insert(
     const Iterator<T> position,
     T &&value)
 {
-    if (->position >= arr_ + size_)
+    if (&position >= this->arr_ + size_)
     {
         throw "Index out of range";
     }
     if (size_ == capacity_)
     {
-        reserve(capacity_ * 2)
+        reserve(capacity_ * 2);
     }
     for (auto i = end(); i >= position; i--)
     {
-        i.arr_ = *(->i - 1);
+        i.arr_ = *(&i - 1);
     }
     size_++;
-    new (->position) value;
+    *(&position) = value;
     return position;
 }
 
 template <typename T>
-Iterator<T> insert(
+Iterator<T> Vector<T>::insert(
     const Iterator<T> position,
     size_t count,
     const T &value)
 {
-    if (->position >= arr_ + size_)
+    if (&position >= this->arr_ + size_)
     {
         throw "Index out of range";
     }
     if (size_ == capacity_ + count)
     {
-        reserve((capacity_ + count) * 2)
+        reserve((capacity_ + count) * 2);
     }
     for (auto i = end() - 1 + count; i >= position + count; i--)
     {
-        i.arr_ = *(->i - 1);
+        i.arr_ = *(&i - 1);
     }
     size_++;
     for (auto i = position; i < position + count; i++)
-        new (->i) value;
+        *(&i) = value;
     return position;
 }
 
@@ -219,10 +221,10 @@ void Vector<T>::push_back(T &&value)
 {
     if (size_ == capacity)
     {
-        reserve(capacity * 2)
+        reserve(capacity * 2);
     }
-    arr_[size_] = T;
-    size++;
+    this->arr_[size_] = std::move(value);
+    size_++;
 }
 
 template <typename T>
@@ -247,20 +249,20 @@ void Vector<T>::reserve(const size_t new_capacity)
     T *data = new T[new_capacity];
     for (size_t i = 0; i < size_; i++)
     {
-        data[i] = arr_[i];
+        data[i] = this->arr_[i];
     }
-    delete arr_;
-    arr_ = data;
+    delete this->arr_;
+    this->arr_ = data;
 }
 
 template <typename T>
-void Vector<T>::resize(const size_t new_size, const T &value = T())
+void Vector<T>::resize(const size_t new_size, const T &value)
 {
     if (new_size <= size_)
     {
         for (int i = new_size; i < size_; i++)
         {
-            arr_[i].~T();
+            this->arr_[i].~T();
         }
     }
     else
@@ -271,7 +273,7 @@ void Vector<T>::resize(const size_t new_size, const T &value = T())
         }
         for (int i = size_; i < new_size; i++)
         {
-            new (arr_ + i) T(value);
+            new (this.arr_ + i) T(value);
         }
     }
 
@@ -288,15 +290,15 @@ template <typename T>
 void Vector<T>::swap(Vector<T> &other) noexcept
 {
 
-    T *temp_data = arr_;
+    T *temp_data = this->arr_;
     size_t temp_size = size_;
     size_t temp_capacity = capacity_;
 
-    data_ = other.data_;
+    this->arr_ = other.arr_;
     size_ = other.size_;
     capacity_ = other.capacity_;
 
-    other.data_ = temp_data;
+    other.arr_ = temp_data;
     other.size_ = temp_size;
     other.capacity_ = temp_capacity;
 }

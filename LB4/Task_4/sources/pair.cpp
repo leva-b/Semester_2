@@ -1,4 +1,4 @@
-#include "../header/pair.h"
+#include "../headers/pair.h"
 
 template <typename T1, typename T2>
 constexpr Pair<T1, T2>::Pair() : first{}, second{} {}
@@ -43,6 +43,24 @@ Pair<T1, T2> &Pair<T1, T2>::operator=(const Pair<U1, U2> &p)
 }
 
 template <typename T1, typename T2>
-Pair<T1, T2> &Pair<T1, T2>::operator=(Pair<T1, T2> &&p)
+Pair<T1, T2> &Pair<T1, T2>::operator=(Pair &&p)
 {
+    if (this != &p)
+    {
+        first = std::move(other.first);
+        second = std::move(other.second);
+        return *this;
+    }
+}
+
+template <typename T1, typename T2>
+template <class U1, class U2>
+Pair<T1, T2> &Pair<T1, T2>::operator=(Pair<U1, U2> &&p)
+{
+    if (this != &p)
+    {
+        first = std::move(p.first);
+        second = std::move(p.second);
+    }
+    return *this;
 }

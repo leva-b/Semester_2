@@ -1,3 +1,5 @@
+#pragma once
+#include "vector.h"
 template <typename T1, typename T2>
 struct Pair
 {
@@ -21,10 +23,8 @@ struct Pair
 
     Pair &operator=(const Pair &p);
     template <class U1, class U2>
-    Pair &operator=(const pair<U1, U2> &p);
-    Pair &operator=(pair &&p) noexcept(see below);
+    Pair &operator=(const Pair<U1, U2> &p);
+    Pair &operator=(Pair &&p);
     template <class U1, class U2>
-    Pair &operator=(pair<U1, U2> &&p);
-
-    void swap(pair &p) noexcept(see below);
+    Pair &operator=(Pair<U1, U2> &&p);
 };
