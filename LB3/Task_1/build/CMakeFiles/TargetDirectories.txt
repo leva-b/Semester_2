@@ -1,0 +1,7 @@
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/Task_1.dir
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/edit_cache.dir
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/rebuild_cache.dir
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/list_install_components.dir
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/install.dir
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/install/local.dir
+/home/leva/Документы/BSUIR/Semester_2/LB3/Task_1/build/CMakeFiles/install/strip.dir

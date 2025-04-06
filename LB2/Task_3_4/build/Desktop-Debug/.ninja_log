@@ -1,0 +1,18 @@
+# ninja log v6
+1	19	1741766410993747743	CMakeFiles/Task_3_4.dir/expression.cpp.o	a31c87ee9aace1fb
+1	224	1741766410993747743	CMakeFiles/Task_3_4.dir/main.cpp.o	a4dfd088889e66d6
+1	20	1741766422214079515	CMakeFiles/Task_3_4.dir/number.cpp.o	2e6792cece90b795
+1	23	1741766460831171469	CMakeFiles/Task_3_4.dir/expression.cpp.o	a31c87ee9aace1fb
+1	23	1741766460831171469	CMakeFiles/Task_3_4.dir/number.cpp.o	2e6792cece90b795
+1	23	1741766583530181227	CMakeFiles/Task_3_4.dir/expression.cpp.o	a31c87ee9aace1fb
+1	24	1741766583530181227	CMakeFiles/Task_3_4.dir/number.cpp.o	2e6792cece90b795
+1	26	1741766583530181227	CMakeFiles/Task_3_4.dir/binaryoperation.cpp.o	524d0e921f3d8a64
+26	84	1741766583554181754	Task_3_4	252e85ea30cf8598
+0	21	1741766661911790431	CMakeFiles/Task_3_4.dir/binaryoperation.cpp.o	524d0e921f3d8a64
+21	60	1741766661931790815	Task_3_4	252e85ea30cf8598
+1	24	1741766666267873608	CMakeFiles/Task_3_4.dir/binaryoperation.cpp.o	524d0e921f3d8a64
+24	60	1741766666291874064	Task_3_4	252e85ea30cf8598
+2	30	1741767254415062375	CMakeFiles/Task_3_4.dir/expression.cpp.o	a31c87ee9aace1fb
+2	31	1741767254415062375	CMakeFiles/Task_3_4.dir/number.cpp.o	2e6792cece90b795
+2	47	1741767254415062375	CMakeFiles/Task_3_4.dir/binaryoperation.cpp.o	524d0e921f3d8a64
+47	115	1741767254459062708	Task_3_4	252e85ea30cf8598

@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/MyProject.dir/main.cpp.o CMakeFiles/MyProject.dir/Models/array.cpp.o CMakeFiles/MyProject.dir/Sort/interpolation.cpp.o -o MyProject 

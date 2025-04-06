@@ -1,0 +1,3 @@
+/home/leva/Documents/BSUIR/Semester_2/LB4/Task_1/build/CMakeFiles/MyProject.dir
+/home/leva/Documents/BSUIR/Semester_2/LB4/Task_1/build/CMakeFiles/edit_cache.dir
+/home/leva/Documents/BSUIR/Semester_2/LB4/Task_1/build/CMakeFiles/rebuild_cache.dir

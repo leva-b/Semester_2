@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/Task_2.dir/Models/array.cpp.o CMakeFiles/Task_2.dir/Sort/interpolation.cpp.o CMakeFiles/Task_2.dir/CMakeFiles/3.22.1/CompilerIdCXX/CMakeCXXCompilerId.cpp.o CMakeFiles/Task_2.dir/main.cpp.o -o Task_2 
