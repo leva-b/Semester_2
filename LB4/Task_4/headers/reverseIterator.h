@@ -4,6 +4,8 @@
 template <typename T>
 class ReverseIterator : public Iterator<T>
 {
+public:
+    ReverseIterator(const Iterator<T> iterator) : Iterator<T>(iterator) {}
     using Iterator<T>::Iterator;
 
     ReverseIterator<T> &operator++()

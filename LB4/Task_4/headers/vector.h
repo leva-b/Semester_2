@@ -1,15 +1,18 @@
 #pragma once
 #include "iterator.h"
+#include "reverseIterator.h"
 #include "pair.h"
-#include <cstddef>
 
 template <typename T>
 class Vector : public Iterator<T>
 {
-    size_t capacity_ = 16;
-    size_t size_ = 0;
+    size_t capacity_;
+    size_t size_;
 
+public:
     Vector(size_t capacity);
+    Vector();
+    ~Vector();
     void assign(Iterator<T> first, Iterator<T> last);
     T &at(size_t position);
     T &back();
@@ -51,9 +54,11 @@ class Vector : public Iterator<T>
 
     size_t size() const;
     void swap(Vector<T> &right) noexcept;
+
+    T &operator[](size_t index);
 };
 
-using I1 = Vector<int>;
-using I2 = Vector<Pair<int, double>>;
-using I3 = Pair<Vector<int>, Vector<Pair<int, double>>>;
-using I4 = Pair<int, int>;
+template class Vector<int>;
+template class Vector<Pair<int, double>>;
+template struct Pair<Vector<int>, Vector<Pair<int, double>>>;
+template class Vector<Pair<Vector<int>, Vector<Pair<int, double>>>>;

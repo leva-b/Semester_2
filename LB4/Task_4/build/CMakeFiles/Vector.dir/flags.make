@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = 
+CXX_INCLUDES = -I/home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/headers
 
 CXX_FLAGS = 
 

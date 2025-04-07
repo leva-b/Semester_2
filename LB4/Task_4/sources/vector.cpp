@@ -4,13 +4,26 @@
 #include <cstdint>
 
 template <typename T>
-Vector<T>::Vector(size_t capacity) : capacity_(capacity) {}
+Vector<T>::Vector() : capacity_(16), size_(0) { this->arr_ = new T[capacity_]; }
+
+template <typename T>
+Vector<T>::Vector(size_t capacity) : Iterator<T>(nullptr)
+{
+    size_ = capacity;
+    capacity_ = 2 * capacity;
+    this->arr_ = new T[capacity_];
+}
+template <typename T>
+Vector<T>::~Vector()
+{
+    delete[] this->arr_;
+}
 
 template <typename T>
 void Vector<T>::assign(Iterator<T> first, Iterator<T> last)
 {
     delete[] this->arr_;
-    size_ = (&last)-- > first;
+    size_ = last - first;
     while (size_ > capacity_)
     {
         capacity_ *= 2;
@@ -18,7 +31,7 @@ void Vector<T>::assign(Iterator<T> first, Iterator<T> last)
     this->arr_ = new T[size_];
     for (int i = 0; i < size_; i++)
     {
-        this->arr_[i] = &first[i];
+        this->arr_[i] = *(&first + i);
     }
 }
 
@@ -47,7 +60,7 @@ Iterator<T> Vector<T>::begin()
 template <typename T>
 Iterator<T> Vector<T>::end()
 {
-    return Iterator(this.arr_ + size_);
+    return Iterator(this->arr_ + size_);
 }
 
 template <typename T>
@@ -59,13 +72,13 @@ size_t Vector<T>::capacity() const
 template <typename T>
 Iterator<T> Vector<T>::cbegin() const
 {
-    return Iterator(this.arr_);
+    return Iterator(this->arr_);
 }
 
 template <typename T>
 Iterator<T> Vector<T>::cend() const
 {
-    return Iterator(this.arr_ + size_);
+    return Iterator(this->arr_ + size_);
 }
 
 template <typename T>
@@ -122,7 +135,7 @@ bool Vector<T>::empty() const
 template <typename T>
 Iterator<T> Vector<T>::erase(Iterator<T> first, Iterator<T> last)
 {
-    if (last = nullptr)
+    if (last == nullptr)
     {
         last = first;
     }
@@ -133,10 +146,10 @@ Iterator<T> Vector<T>::erase(Iterator<T> first, Iterator<T> last)
 
     last++;
     Iterator<T> start = first + 1;
-    size_t size_dif = last.arr_ - first.arr_;
+    size_t size_dif = &last - &first;
     while (last < end())
     {
-        first.arr = *(last.arr_);
+        *(&first) = *(&last);
         last++;
         first++;
     }
@@ -169,7 +182,7 @@ Iterator<T> Vector<T>::insert(
     }
     for (auto i = end(); i >= position; i--)
     {
-        i.arr_ = *(&i - 1);
+        *(&i) = *(&i - 1);
     }
     size_++;
     *(&position) = value;
@@ -178,11 +191,11 @@ Iterator<T> Vector<T>::insert(
 
 template <typename T>
 Iterator<T> Vector<T>::insert(
-    const Iterator<T> position,
+    Iterator<T> position,
     size_t count,
     const T &value)
 {
-    if (&position >= this->arr_ + size_)
+    if (position >= Iterator<T>(this->arr_ + size_))
     {
         throw "Index out of range";
     }
@@ -192,10 +205,10 @@ Iterator<T> Vector<T>::insert(
     }
     for (auto i = end() - 1 + count; i >= position + count; i--)
     {
-        i.arr_ = *(&i - 1);
+        *(&i) = *(&i - 1);
     }
     size_++;
-    for (auto i = position; i < position + count; i++)
+    for (auto i = position; i < (position + count); i++)
         *(&i) = value;
     return position;
 }
@@ -219,9 +232,9 @@ void Vector<T>::pop_back()
 template <typename T>
 void Vector<T>::push_back(T &&value)
 {
-    if (size_ == capacity)
+    if (size_ == capacity_)
     {
-        reserve(capacity * 2);
+        reserve(capacity_ * 2);
     }
     this->arr_[size_] = std::move(value);
     size_++;
@@ -230,13 +243,13 @@ void Vector<T>::push_back(T &&value)
 template <typename T>
 ReverseIterator<T> Vector<T>::rbegin()
 {
-    return ReverseIterator(end());
+    return ReverseIterator<T>(end());
 }
 
 template <typename T>
 ReverseIterator<T> Vector<T>::rend()
 {
-    return ReverseIterator(begin());
+    return ReverseIterator<T>(begin());
 }
 
 template <typename T>
@@ -273,7 +286,7 @@ void Vector<T>::resize(const size_t new_size, const T &value)
         }
         for (int i = size_; i < new_size; i++)
         {
-            new (this.arr_ + i) T(value);
+            *(this->arr_ + i) = value;
         }
     }
 
@@ -301,4 +314,14 @@ void Vector<T>::swap(Vector<T> &other) noexcept
     other.arr_ = temp_data;
     other.size_ = temp_size;
     other.capacity_ = temp_capacity;
+}
+
+template <typename T>
+T &Vector<T>::operator[](size_t index)
+{
+    if (index < 0 || index >= size_)
+    {
+        throw "Index out of range";
+    }
+    return this->arr_[index];
 }

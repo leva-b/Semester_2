@@ -3,8 +3,6 @@ CMakeFiles/Vector.dir/sources/vector.cpp.o: \
  /usr/include/stdc-predef.h \
  /home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/sources/../headers/reverseIterator.h \
  /home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/sources/../headers/iterator.h \
- /home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/sources/../headers/vector.h \
- /home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/sources/../headers/pair.h \
  /usr/include/c++/11/cstddef \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -18,16 +16,19 @@ CMakeFiles/Vector.dir/sources/vector.cpp.o: \
  /usr/include/x86_64-linux-gnu/c++/11/bits/cpu_defines.h \
  /usr/include/c++/11/pstl/pstl_config.h \
  /usr/lib/gcc/x86_64-linux-gnu/11/include/stddef.h \
+ /home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/sources/../headers/vector.h \
+ /home/leva/Documents/BSUIR/Semester_2/LB4/Task_4/sources/../headers/pair.h \
+ /usr/include/c++/11/utility /usr/include/c++/11/bits/stl_relops.h \
+ /usr/include/c++/11/bits/stl_pair.h /usr/include/c++/11/bits/move.h \
+ /usr/include/c++/11/type_traits /usr/include/c++/11/initializer_list \
  /usr/include/c++/11/stdexcept /usr/include/c++/11/exception \
  /usr/include/c++/11/bits/exception.h \
  /usr/include/c++/11/bits/exception_ptr.h \
  /usr/include/c++/11/bits/exception_defines.h \
  /usr/include/c++/11/bits/cxxabi_init_exception.h \
  /usr/include/c++/11/typeinfo /usr/include/c++/11/bits/hash_bytes.h \
- /usr/include/c++/11/new /usr/include/c++/11/bits/move.h \
- /usr/include/c++/11/type_traits \
- /usr/include/c++/11/bits/nested_exception.h /usr/include/c++/11/string \
- /usr/include/c++/11/bits/stringfwd.h \
+ /usr/include/c++/11/new /usr/include/c++/11/bits/nested_exception.h \
+ /usr/include/c++/11/string /usr/include/c++/11/bits/stringfwd.h \
  /usr/include/c++/11/bits/memoryfwd.h \
  /usr/include/c++/11/bits/char_traits.h \
  /usr/include/c++/11/bits/stl_algobase.h \
@@ -35,7 +36,6 @@ CMakeFiles/Vector.dir/sources/vector.cpp.o: \
  /usr/include/c++/11/bits/cpp_type_traits.h \
  /usr/include/c++/11/ext/type_traits.h \
  /usr/include/c++/11/ext/numeric_traits.h \
- /usr/include/c++/11/bits/stl_pair.h \
  /usr/include/c++/11/bits/stl_iterator_base_types.h \
  /usr/include/c++/11/bits/stl_iterator_base_funcs.h \
  /usr/include/c++/11/bits/concept_check.h \
@@ -79,7 +79,6 @@ CMakeFiles/Vector.dir/sources/vector.cpp.o: \
  /usr/include/c++/11/bits/stl_function.h \
  /usr/include/c++/11/backward/binders.h \
  /usr/include/c++/11/bits/range_access.h \
- /usr/include/c++/11/initializer_list \
  /usr/include/c++/11/bits/basic_string.h \
  /usr/include/c++/11/ext/atomicity.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/gthr.h \
