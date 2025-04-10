@@ -50,5 +50,3 @@ public:
     bool operator==(const Iterator &other) const { return arr_ == other.arr_; }
     bool operator!=(const Iterator &other) const { return arr_ != other.arr_; }
 };
-
-using A1 = Iterator<int>;

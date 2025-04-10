@@ -63,11 +63,11 @@ uint Array::binsearch(int digit)
         }
         else if (sortArr[middle] == digit)
         {
-            std::cout << "werwer " << middle;
+            std::cout << middle;
             return middle;
         }
     }
-    std::cout << "werwer " << std::numeric_limits<unsigned int>::max() << std::endl;
+
     return std::numeric_limits<unsigned int>::max();
 }
 
@@ -78,6 +78,7 @@ void Array::sort()
     initSortArr();
     start = clock();
     interpolationSort();
+    // printArray(myArr, sizeArr);
     end = clock();
     std::cout << "interpolition sort time " << end - start << std::endl;
 }

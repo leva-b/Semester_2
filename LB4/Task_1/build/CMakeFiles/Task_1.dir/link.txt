@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/Task_1.dir/main.cpp.o CMakeFiles/Task_1.dir/Models/array.cpp.o CMakeFiles/Task_1.dir/Sort/heapSort.cpp.o CMakeFiles/Task_1.dir/Sort/mergeSort.cpp.o CMakeFiles/Task_1.dir/Sort/quickSort.cpp.o -o Task_1 

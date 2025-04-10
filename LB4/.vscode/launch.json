@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/leva/Documents/BSUIR/Semester_2/LB4/Task_2",
-      "program": "/home/leva/Documents/BSUIR/Semester_2/LB4/Task_2/build/Debug/outDebug",
+      "cwd": "/home/leva/Documents/BSUIR/Semester_2/LB4",
+      "program": "/home/leva/Documents/BSUIR/Semester_2/LB4/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

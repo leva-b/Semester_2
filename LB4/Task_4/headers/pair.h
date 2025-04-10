@@ -14,8 +14,7 @@ struct Pair
 
     Pair(Pair<T1, T2> &&Right) noexcept : first(std::move(Right.first)), second(std::move(Right.second)) {}
 
-    template <class Other1, class Other2>
-    Pair(Other1 &&Val1, Other2 &&Val2) : first(std::move(Val1)), second(std::move(Val2)) {}
+    Pair(T1 &&Val1, T2 &&Val2) : first(std::move(Val1)), second(std::move(Val2)) {}
 
     Pair<T1, T2> &operator=(const Pair &p)
     {

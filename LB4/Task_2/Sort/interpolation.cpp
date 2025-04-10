@@ -1,84 +1,51 @@
 #include "../services/array.h"
 #include <algorithm>
-
+#include <iostream>
 void Array::interpolationSort()
 {
+    if (sortArr == nullptr || sizeArr == 0)
+    {
+        std::cerr << "Array is not initialized or empty!" << std::endl;
+        return;
+    }
+
     for (uint i = 1; i < sizeArr; i++)
     {
-        // Пропускаем уже упорядоченные элементы
-        if (sortArr[i] >= sortArr[i - 1])
-        {
-            continue;
-        }
-
         int key = sortArr[i];
-        int left = 0;
-        int right = i - 1;
-        int pos = left;
+        uint l = 0, r = i - 1;
 
-        // Улучшенный интерполяционный поиск
-        if (sortArr[right] != sortArr[left])
+        while (l <= r)
         {
-            // Основная интерполяционная формула
-            pos = left + ((key - sortArr[left]) * (right - left)) /
-                             (sortArr[right] - sortArr[left]);
+            if (sortArr[r] == sortArr[l])
+            {
+                if (sortArr[l] < key)
+                {
+                    l = r + 1;
+                }
+                break;
+            }
 
-            // Гарантируем, что pos находится в границах
-            pos = std::max(left, std::min(right, pos));
+            uint pos = l + ((key - sortArr[l]) * (r - l)) / (sortArr[r] - sortArr[l]);
 
-            // Уточнение позиции бинарным поиском
+            pos = std::max(l, std::min(pos, r));
+
             if (sortArr[pos] < key)
             {
-                left = pos + 1;
-                while (left <= right)
-                {
-                    int mid = left + (right - left) / 2;
-                    if (sortArr[mid] < key)
-                    {
-                        left = mid + 1;
-                    }
-                    else
-                    {
-                        right = mid - 1;
-                    }
-                }
-                pos = left;
+                l = pos + 1;
             }
-            else if (sortArr[pos] > key)
+            else
             {
-                right = pos - 1;
-                while (left <= right)
-                {
-                    int mid = left + (right - left) / 2;
-                    if (sortArr[mid] > key)
-                    {
-                        right = mid - 1;
-                    }
-                    else
-                    {
-                        left = mid + 1;
-                    }
-                }
-                pos = left;
+                r = pos - 1;
             }
-        }
-        else
-        { // Все элементы равны
-            pos = (key < sortArr[left]) ? left : right + 1;
         }
 
-        // Оптимизированный сдвиг элементов
-        if (static_cast<uint>(pos) < i)
+        for (long j = i - 1; j >= l; j--)
         {
-            int temp = sortArr[i];
-            for (uint j = i; j > static_cast<uint>(pos); j--)
-            {
-                sortArr[j] = sortArr[j - 1];
-            }
-            sortArr[pos] = temp;
+            sortArr[j + 1] = sortArr[j];
         }
+        sortArr[l] = key;
 
-        // Отладочный вывод (можно убрать в финальной версии)
-        Array::printArray(sortArr, sizeArr);
+        std::cout << "Step " << i << ": ";
+        printArray(sortArr, sizeArr);
     }
 }

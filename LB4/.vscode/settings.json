@@ -45,11 +45,5 @@
   "C_Cpp_Runner.useLeakSanitizer": false,
   "C_Cpp_Runner.showCompilationTime": false,
   "C_Cpp_Runner.useLinkTimeOptimization": false,
-  "C_Cpp_Runner.msvcSecureNoWarnings": false,
-  "files.associations": {
-    "*.cpp": "cpp",
-    "random": "cpp",
-    "limits": "cpp",
-    "*.tcc": "cpp"
-  }
+  "C_Cpp_Runner.msvcSecureNoWarnings": false
 }

@@ -11,7 +11,9 @@ int main()
         std::cout << "1.Enter array\n";
         std::cout << "2.Sort the array\n";
         std::cout << "3.Binary search\n";
-        std::cout << "4.Exit" << std::endl;
+        std::cout << "4.Output array\n";
+        std::cout << "5.Output sorted array\n";
+        std::cout << "6.Exit" << std::endl;
         std::cin >> c;
         switch (c)
         {
@@ -25,9 +27,16 @@ int main()
             int digit;
             std::cout << "Enter a number to search: ";
             std::cin >> digit;
-            myArray.binsearch(digit);
+            std::cout << myArray.binsearch(digit) << std::endl;
+            break;
         case '4':
-            std::cout << "Program execution completed";
+            myArray.print();
+            break;
+        case '5':
+            myArray.printSortedArray();
+            break;
+        case '6':
+            std::cout << "Program execution completed\n";
             return 0;
         default:
             std::cout << "Input error, please try again\n";

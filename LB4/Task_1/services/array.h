@@ -18,6 +18,8 @@ private:
     void heapSort();
 
 public:
+    void print();
+    void printSortedArray();
     void generationArray();
     void init();
     void sort();

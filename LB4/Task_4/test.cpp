@@ -2,27 +2,29 @@
 #include <iostream>
 #include <cstdint>
 #include "headers/vector.h"
+#include <vector>
 
 int main()
 {
-    Pair<Vector<int>, Vector<Pair<int, double>>> a;
-    a.first.resize(10);
-    a.second.resize(12);
-    a.first[1] = 10;
-    (a.second)[1].first = 4;
-    std::cout << a.first[1] << ' ' << (a.second)[1].first;
-    // Vector<Pair<int, double>> a(7);
-    // for (int i = 0; i < a.size(); i++)
-    // {
-    //     std::cout << a[i].first << ' ' << a[i].second << "; ";
-    // }
-    // std::cout << std::endl;
-    // // a.insert(a.begin() + 2, 10, 3);
-    // a.insert(a.begin() + 3, Pair<int, double>(111, 10.1));
-    // for (int i = 0; i < a.size(); i++)
-    // {
-    //     std::cout << a[i].first << ' ' << a[i].second << "; ";
-    // }
-    // std::cout << std::endl;
+    Vector<Pair<Vector<int>, Vector<Pair<int, double>>>> data;
+    Vector<int> firstVec1;
+    firstVec1.push_back(10);
+    firstVec1.push_back(20);
+    firstVec1.push_back(30);
+    Vector<Pair<int, double>> secondVec1;
+    secondVec1.emplace_back(1, 1.5);
+    secondVec1.emplace_back(2, 2.5);
+    data.emplace_back(firstVec1, secondVec1);
+
+    Vector<int> firstVec2;
+    firstVec2.push_back(40);
+    firstVec2.push_back(50);
+    Vector<Pair<int, double>> secondVec2;
+    secondVec2.emplace_back(3, 3.5);
+    data.emplace_back(std::move(firstVec1), std::move(secondVec2));
+    int a;
+    std::cout << "                   " << a << std::endl;
+    data.emplace(data.begin() + 0, Vector<int>(), Vector<Pair<int, double>>());
+
     return 0;
 }

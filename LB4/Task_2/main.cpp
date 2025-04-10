@@ -3,7 +3,7 @@
 #include <ctime>
 int main()
 {
-    std::srand(static_cast<unsigned int>(std::time(nullptr))); // Инициализация генератора случайных чисел
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
 
     char c;
     Array myArray;
@@ -18,7 +18,7 @@ int main()
         switch (c)
         {
         case '1':
-            myArray.init();
+            myArray.generationArray();
             break;
         case '2':
             myArray.sort();

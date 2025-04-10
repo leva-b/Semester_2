@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named MyProject
+# Target rules for targets named Task_1
 
 # Build rule for target.
-MyProject: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 MyProject
-.PHONY : MyProject
+Task_1: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Task_1
+.PHONY : Task_1
 
 # fast build rule for target.
-MyProject/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/build
-.PHONY : MyProject/fast
+Task_1/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/build
+.PHONY : Task_1/fast
 
 Models/array.o: Models/array.cpp.o
 .PHONY : Models/array.o
 
 # target to build an object file
 Models/array.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Models/array.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Models/array.cpp.o
 .PHONY : Models/array.cpp.o
 
 Models/array.i: Models/array.cpp.i
@@ -142,7 +142,7 @@ Models/array.i: Models/array.cpp.i
 
 # target to preprocess a source file
 Models/array.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Models/array.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Models/array.cpp.i
 .PHONY : Models/array.cpp.i
 
 Models/array.s: Models/array.cpp.s
@@ -150,7 +150,7 @@ Models/array.s: Models/array.cpp.s
 
 # target to generate assembly for a file
 Models/array.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Models/array.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Models/array.cpp.s
 .PHONY : Models/array.cpp.s
 
 Sort/heapSort.o: Sort/heapSort.cpp.o
@@ -158,7 +158,7 @@ Sort/heapSort.o: Sort/heapSort.cpp.o
 
 # target to build an object file
 Sort/heapSort.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/heapSort.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/heapSort.cpp.o
 .PHONY : Sort/heapSort.cpp.o
 
 Sort/heapSort.i: Sort/heapSort.cpp.i
@@ -166,7 +166,7 @@ Sort/heapSort.i: Sort/heapSort.cpp.i
 
 # target to preprocess a source file
 Sort/heapSort.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/heapSort.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/heapSort.cpp.i
 .PHONY : Sort/heapSort.cpp.i
 
 Sort/heapSort.s: Sort/heapSort.cpp.s
@@ -174,7 +174,7 @@ Sort/heapSort.s: Sort/heapSort.cpp.s
 
 # target to generate assembly for a file
 Sort/heapSort.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/heapSort.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/heapSort.cpp.s
 .PHONY : Sort/heapSort.cpp.s
 
 Sort/mergeSort.o: Sort/mergeSort.cpp.o
@@ -182,7 +182,7 @@ Sort/mergeSort.o: Sort/mergeSort.cpp.o
 
 # target to build an object file
 Sort/mergeSort.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/mergeSort.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/mergeSort.cpp.o
 .PHONY : Sort/mergeSort.cpp.o
 
 Sort/mergeSort.i: Sort/mergeSort.cpp.i
@@ -190,7 +190,7 @@ Sort/mergeSort.i: Sort/mergeSort.cpp.i
 
 # target to preprocess a source file
 Sort/mergeSort.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/mergeSort.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/mergeSort.cpp.i
 .PHONY : Sort/mergeSort.cpp.i
 
 Sort/mergeSort.s: Sort/mergeSort.cpp.s
@@ -198,7 +198,7 @@ Sort/mergeSort.s: Sort/mergeSort.cpp.s
 
 # target to generate assembly for a file
 Sort/mergeSort.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/mergeSort.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/mergeSort.cpp.s
 .PHONY : Sort/mergeSort.cpp.s
 
 Sort/quickSort.o: Sort/quickSort.cpp.o
@@ -206,7 +206,7 @@ Sort/quickSort.o: Sort/quickSort.cpp.o
 
 # target to build an object file
 Sort/quickSort.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/quickSort.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/quickSort.cpp.o
 .PHONY : Sort/quickSort.cpp.o
 
 Sort/quickSort.i: Sort/quickSort.cpp.i
@@ -214,7 +214,7 @@ Sort/quickSort.i: Sort/quickSort.cpp.i
 
 # target to preprocess a source file
 Sort/quickSort.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/quickSort.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/quickSort.cpp.i
 .PHONY : Sort/quickSort.cpp.i
 
 Sort/quickSort.s: Sort/quickSort.cpp.s
@@ -222,7 +222,7 @@ Sort/quickSort.s: Sort/quickSort.cpp.s
 
 # target to generate assembly for a file
 Sort/quickSort.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/Sort/quickSort.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/Sort/quickSort.cpp.s
 .PHONY : Sort/quickSort.cpp.s
 
 main.o: main.cpp.o
@@ -230,7 +230,7 @@ main.o: main.cpp.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -238,7 +238,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -246,7 +246,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyProject.dir/build.make CMakeFiles/MyProject.dir/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Task_1.dir/build.make CMakeFiles/Task_1.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 # Help Target
@@ -257,7 +257,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... MyProject"
+	@echo "... Task_1"
 	@echo "... Models/array.o"
 	@echo "... Models/array.i"
 	@echo "... Models/array.s"

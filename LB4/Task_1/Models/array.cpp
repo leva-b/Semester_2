@@ -122,3 +122,28 @@ void Array::generationArray()
         myArr[i] = -1000 + std::rand() % (2000 + 1); // Генерация случайного числа
     }
 }
+
+void Array::print()
+{
+    std::cout << "Current array: { ";
+    for (int i = 0; i < sizeArr; i++)
+    {
+        std::cout << myArr[i] << ' ';
+    }
+    std::cout << " }" << std::endl;
+}
+
+void Array::printSortedArray()
+{
+    if (sortArr == nullptr)
+    {
+        initSortArr();
+        quickSort(0, sizeArr - 1);
+    }
+    std::cout << "Sorted array: { ";
+    for (int i = 0; i < sizeArr; i++)
+    {
+        std::cout << sortArr[i] << ' ';
+    }
+    std::cout << " }" << std::endl;
+}

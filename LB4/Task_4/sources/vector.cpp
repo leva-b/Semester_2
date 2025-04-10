@@ -2,6 +2,7 @@
 #include "../headers/vector.h"
 #include <stdexcept>
 #include <cstdint>
+#include <iostream>
 
 template <typename T>
 Vector<T>::Vector() : capacity_(16), size_(0) { this->arr_ = new T[capacity_]; }
@@ -16,7 +17,33 @@ Vector<T>::Vector(size_t capacity) : Iterator<T>(nullptr)
 template <typename T>
 Vector<T>::~Vector()
 {
-    delete[] this->arr_;
+    if (this->arr_)
+    {
+        for (size_t i = 0; i < size_; ++i)
+        {
+            this->arr_[i].~T();
+        }
+        delete[] this->arr_;
+        this->arr_ = nullptr;
+    }
+}
+
+template <typename T>
+Vector<T>::Vector(const Vector<T> &other) : capacity_(other.capacity_), size_(other.size_)
+{
+    this->arr_ = new T[capacity_];
+    for (size_t i = 0; i < size_; ++i)
+    {
+        this->arr_[i] = other.arr_[i];
+    }
+}
+
+template <typename T>
+Vector<T>::Vector(Vector<T> &&other) noexcept : size_(other.size_), capacity_(other.capacity_)
+{
+    this->arr_ = other.arr_;
+    other.arr_ = nullptr;
+    other.size_ = other.capacity_ = 0;
 }
 
 template <typename T>
@@ -104,18 +131,20 @@ Iterator<T> Vector<T>::emplace(
 {
     if (&position >= this->arr_ + size_)
     {
+        std::cout << "index out of range " << std::endl;
         throw "Index out of range";
     }
     if (size_ == capacity_)
     {
-        reserve(capacity_ * 2);
+        reserve(capacity_ ? capacity_ * 2 : 1);
     }
-    for (auto i = end(); i >= position; i--)
+    for (Iterator<T> i = end(); i > position; i--)
     {
-        i.arr_ = *(&i - 1);
+        *(&i) = std::move(*(&i - 1));
     }
     size_++;
     new (&position) T(args...);
+    return position;
 }
 
 template <typename T>
@@ -123,7 +152,8 @@ template <typename... Args>
 Iterator<T> Vector<T>::emplace_back(Args &&...args)
 {
     T temp(args...);
-    push_back(temp);
+    push_back(std::move(temp));
+    return Iterator<T>(end() - 1);
 }
 
 template <typename T>
@@ -178,14 +208,14 @@ Iterator<T> Vector<T>::insert(
     }
     if (size_ == capacity_)
     {
-        reserve(capacity_ * 2);
+        reserve(capacity_ ? capacity_ * 2 : 1);
     }
     for (auto i = end(); i >= position; i--)
     {
-        *(&i) = *(&i - 1);
+        *(&i) = std::move(*(&i - 1));
     }
     size_++;
-    *(&position) = value;
+    *(&position) = std::move(value);
     return position;
 }
 
@@ -234,7 +264,7 @@ void Vector<T>::push_back(T &&value)
 {
     if (size_ == capacity_)
     {
-        reserve(capacity_ * 2);
+        reserve(capacity_ ? capacity_ * 2 : 1);
     }
     this->arr_[size_] = std::move(value);
     size_++;
@@ -262,10 +292,13 @@ void Vector<T>::reserve(const size_t new_capacity)
     T *data = new T[new_capacity];
     for (size_t i = 0; i < size_; i++)
     {
-        data[i] = this->arr_[i];
+        this->arr_[i].~T();
+        new (data + i) T(std::move(this->arr_[i]));
     }
-    delete this->arr_;
+
+    delete[] this->arr_;
     this->arr_ = data;
+    capacity_ = new_capacity;
 }
 
 template <typename T>
@@ -325,3 +358,50 @@ T &Vector<T>::operator[](size_t index)
     }
     return this->arr_[index];
 }
+
+template <typename T>
+Vector<T> &Vector<T>::operator=(const Vector<T> &other)
+{
+    if (*this == other)
+        return *this;
+    capacity_ = other.capacity_;
+    size_ = other.size_;
+    if (this->arr_)
+    {
+        delete[] this->arr_;
+    }
+    this->arr_ = new T[capacity_];
+    for (size_t i = 0; i < size_; i++)
+    {
+        this->arr_[i] = other.arr_[i];
+    }
+    return *this;
+}
+
+template class Vector<Pair<int, double>>;
+template class Iterator<Pair<int, double>>;
+
+template Iterator<Pair<int, double>> Vector<Pair<int, double>>::emplace_back<int, double>(int &&, double &&);
+
+template Iterator<Pair<Vector<int>, Vector<Pair<int, double>>>>
+Vector<Pair<Vector<int>, Vector<Pair<int, double>>>>::emplace_back<Vector<int> &, Vector<Pair<int, double>> &>(
+    Vector<int> &,
+    Vector<Pair<int, double>> &);
+
+template Iterator<Pair<Vector<int>, Vector<Pair<int, double>>>>
+Vector<Pair<Vector<int>, Vector<Pair<int, double>>>>::emplace_back<Vector<int>, Vector<Pair<int, double>>>(
+    Vector<int> &&,
+    Vector<Pair<int, double>> &&);
+
+template Iterator<Pair<Vector<int>, Vector<Pair<int, double>>>>
+Vector<Pair<Vector<int>, Vector<Pair<int, double>>>>::emplace<Vector<int>, Vector<Pair<int, double>>>(
+    Iterator<Pair<Vector<int>, Vector<Pair<int, double>>>>,
+    Vector<int> &&,
+    Vector<Pair<int, double>> &&);
+
+template Iterator<int> Vector<int>::insert(Iterator<int> position, int &&value);
+
+template Iterator<Pair<int, double>> Vector<Pair<int, double>>::emplace<int, double>(
+    Iterator<Pair<int, double>> position,
+    int &&arg1,
+    double &&arg2);

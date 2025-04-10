@@ -53,12 +53,17 @@ public:
     bool empty() const;
 
     size_t size() const;
+    T &operator[](size_t index);
     void swap(Vector<T> &right) noexcept;
 
-    T &operator[](size_t index);
+    Vector<T> &operator=(const Vector<T> &other);
+    Vector(const Vector<T> &other);
+    Vector(Vector &&other) noexcept;
 };
 
+template struct Pair<int, double>;
+// template class Iterator<Pair<int, double>>;
 template class Vector<int>;
-template class Vector<Pair<int, double>>;
+// template class Vector<Pair<int, double>>;
 template struct Pair<Vector<int>, Vector<Pair<int, double>>>;
 template class Vector<Pair<Vector<int>, Vector<Pair<int, double>>>>;

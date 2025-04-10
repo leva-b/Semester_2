@@ -3,6 +3,11 @@
 #include <sstream>
 #include <algorithm>
 
+int mediana(std::vector<int> &arr, int index)
+{
+    std::sort(arr.begin() + index, arr.begin() + 3 + index);
+    return arr[index + 1];
+}
 int main()
 {
     std::vector<int> a, b;
@@ -15,7 +20,7 @@ int main()
 
     std::istringstream stream(input);
     int number;
-    // Считываем числа из потока
+
     while (stream >> number)
     {
         a.push_back(number);
@@ -23,21 +28,7 @@ int main()
     int remainder = a.size() % 3;
     for (int i = 0; i < a.size() - remainder; i += 3)
     {
-        if ((a[i] >= a[i + 1] && a[i] <= a[i + 2]) || (a[i] <= a[i + 1] && a[i] >= a[i + 2]))
-        {
-            b.push_back(a[i]);
-            continue;
-        }
-        else if ((a[i + 1] >= a[i + 2] && a[i + 1] <= a[i]) || (a[i + 1] <= a[i + 2] && a[i + 1] >= a[i]))
-        {
-            b.push_back(a[i + 1]);
-            continue;
-        }
-        else if ((a[i + 2] >= a[i] && a[i + 2] <= a[i + 1]) || (a[i + 2] <= a[i] && a[i + 2] >= a[i + 1]))
-        {
-            b.push_back(a[i + 2]);
-            continue;
-        }
+        b.push_back(mediana(a, i));
     }
     if (remainder != 0)
     {
