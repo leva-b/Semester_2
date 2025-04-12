@@ -1,0 +1,3 @@
+/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles/myString.dir
+/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles/edit_cache.dir
+/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles/rebuild_cache.dir
