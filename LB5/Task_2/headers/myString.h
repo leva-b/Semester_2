@@ -1,16 +1,12 @@
+#ifndef MYSTRING_API
+#define MYSTRING_API __attribute__((visibility("default")))
+#endif
 #include <cstdlib>
 #include <memory>
-#pragma once
 
-class String
+class MYSTRING_API String
 {
 private:
-    static constexpr struct
-    {
-        const char *original;
-        const char *transformed;
-    } russian_transforms[] = {
-        {"А", "а"}, {"Б", "б"}, /* ... */ {"Я", "я"}, {"а", "а"}, {"б", "б"}, /* ... */ {"я", "я"}, {"Ё", "е"}, {"ё", "е"}};
     enum
     {
         min_size = 0,
@@ -49,8 +45,6 @@ private:
 
     void reserve(const size_t new_capacity);
     void resize(const size_t new_size);
-    Iterator begin();
-    Iterator end();
 
 public:
     String();
@@ -68,26 +62,30 @@ public:
     void pop_back();
     void push_back(char value);
     void append(const String &other);
-
-    String *memmove(const char *s2, size_t n);
-    // char *strcpy(char *s1, const char *s2);
-    String &strncpy(const char *s, size_t n);
-    String &strcat(const char *s2);
-    String &strncat(const char *s2, size_t n);
-
-    int memcmp(const void *s2, size_t n);
-    int strcmp(const char *s2);
-
-    int strcoll(const char *s2);
-    int strncmp(const char *s2, size_t n);
-    size_t strxfrm(const char *s1, size_t n);
-    char *strtok(const char *s2);
-    void *memset(void *s, int c, size_t n);
-    char *strerror(int errnum);
-
     size_t length();
     size_t size();
     String &operator+(const String &other);
     char &operator[](size_t index);
     const char *c_str() const;
+    Iterator begin();
+    Iterator end();
+
+    static MYSTRING_API void *memcpy(void *s1, const void *s2, size_t n);
+    static MYSTRING_API void *memmove(void *s1, const void *s2, size_t n);
+    static MYSTRING_API char *strcpy(char *s1, const char *s2);
+    static MYSTRING_API char *strncpy(char *s1, const char *s2, size_t n);
+    static MYSTRING_API char *strcat(char *s1, const char *s2);
+    static MYSTRING_API char *strncat(char *s1, const char *s2, size_t n);
+    static MYSTRING_API int memcmp(const void *s1, const void *s2, size_t n);
+    static MYSTRING_API int strcmp(const char *s1, const char *s2);
+    static MYSTRING_API int strcoll(const char *s1, const char *s2);
+    static MYSTRING_API int strncmp(const char *s1, const char *s2, size_t n);
+    static MYSTRING_API size_t strxfrm(char *s1, const char *s2, size_t n);
+    static MYSTRING_API char *strtok(char *s1, const char *s2);
+    static MYSTRING_API void *memset(void *s, int c, size_t n);
+    static MYSTRING_API char *strerror(int errnum);
+    static MYSTRING_API size_t strlen(const char *s);
+
+    static MYSTRING_API char *strpbrk(const char *str, const char *accept);
+    static MYSTRING_API size_t strspn(const char *str, const char *accept);
 };

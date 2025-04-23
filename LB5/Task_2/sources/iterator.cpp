@@ -86,5 +86,5 @@ String::Iterator::Iterator(char *ptr) : ptr(ptr) {}
 
 char *String::Iterator::get_ptr()
 {
-    return ptr;
+    return this->ptr;
 }

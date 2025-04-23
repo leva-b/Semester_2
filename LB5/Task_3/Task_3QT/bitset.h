@@ -1,7 +1,12 @@
+#ifndef BITSET_H
+#define BITSET_H
+
 #pragma once
 #include <cstddef>
 #include <cstdint>
 #include <string>
+
+
 template <size_t N>
 class Bitset
 {
@@ -9,8 +14,18 @@ public:
     static constexpr size_t BLOCK_SIZE = 32;
     static constexpr size_t BLOCKS_COUNT = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
+    template<size_t M>
+    friend Bitset<M> operator|(const Bitset<M>& first, const Bitset<M>& other);
+
+    template<size_t M>
+    friend Bitset<M> operator&(const Bitset<M>& first, const Bitset<M>& other);
+
+    template<size_t M>
+    friend Bitset<M> operator^(const Bitset<M>& first, const Bitset<M>& other);
+
     Bitset() = default;
     Bitset(const Bitset &other) = default;
+    ~Bitset() {}
 
     bool operator==(const Bitset &other) const;
     bool operator!=(const Bitset &other) const;
@@ -23,7 +38,7 @@ public:
 
     bool operator[](size_t pos) const;
 
-    bool all() const;
+    bool all();
     bool any() const;
     bool none() const;
     size_t count() const;
@@ -45,11 +60,7 @@ private:
     uint32_t m_data[BLOCKS_COUNT] = {0};
 };
 
-template <size_t N>
-Bitset<N> operator|(const Bitset<N> &first, const Bitset<N> &other);
+template class Bitset<32>;
 
-template <size_t N>
-Bitset<N> operator&(const Bitset<N> &first, const Bitset<N> &other);
 
-template <size_t N>
-Bitset<N> operator^(const Bitset<N> &first, const Bitset<N> &other);
+#endif // BITSET_H

@@ -69,24 +69,10 @@ include CMakeFiles/myString.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/myString.dir/flags.make
 
-CMakeFiles/myString.dir/sources/iterator.cpp.o: CMakeFiles/myString.dir/flags.make
-CMakeFiles/myString.dir/sources/iterator.cpp.o: ../sources/iterator.cpp
-CMakeFiles/myString.dir/sources/iterator.cpp.o: CMakeFiles/myString.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/myString.dir/sources/iterator.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/myString.dir/sources/iterator.cpp.o -MF CMakeFiles/myString.dir/sources/iterator.cpp.o.d -o CMakeFiles/myString.dir/sources/iterator.cpp.o -c /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/iterator.cpp
-
-CMakeFiles/myString.dir/sources/iterator.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/myString.dir/sources/iterator.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/iterator.cpp > CMakeFiles/myString.dir/sources/iterator.cpp.i
-
-CMakeFiles/myString.dir/sources/iterator.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/myString.dir/sources/iterator.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/iterator.cpp -o CMakeFiles/myString.dir/sources/iterator.cpp.s
-
 CMakeFiles/myString.dir/sources/myString.cpp.o: CMakeFiles/myString.dir/flags.make
 CMakeFiles/myString.dir/sources/myString.cpp.o: ../sources/myString.cpp
 CMakeFiles/myString.dir/sources/myString.cpp.o: CMakeFiles/myString.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/myString.dir/sources/myString.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/myString.dir/sources/myString.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/myString.dir/sources/myString.cpp.o -MF CMakeFiles/myString.dir/sources/myString.cpp.o.d -o CMakeFiles/myString.dir/sources/myString.cpp.o -c /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/myString.cpp
 
 CMakeFiles/myString.dir/sources/myString.cpp.i: cmake_force
@@ -97,16 +83,30 @@ CMakeFiles/myString.dir/sources/myString.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/myString.dir/sources/myString.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/myString.cpp -o CMakeFiles/myString.dir/sources/myString.cpp.s
 
+CMakeFiles/myString.dir/sources/iterator.cpp.o: CMakeFiles/myString.dir/flags.make
+CMakeFiles/myString.dir/sources/iterator.cpp.o: ../sources/iterator.cpp
+CMakeFiles/myString.dir/sources/iterator.cpp.o: CMakeFiles/myString.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/myString.dir/sources/iterator.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/myString.dir/sources/iterator.cpp.o -MF CMakeFiles/myString.dir/sources/iterator.cpp.o.d -o CMakeFiles/myString.dir/sources/iterator.cpp.o -c /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/iterator.cpp
+
+CMakeFiles/myString.dir/sources/iterator.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/myString.dir/sources/iterator.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/iterator.cpp > CMakeFiles/myString.dir/sources/iterator.cpp.i
+
+CMakeFiles/myString.dir/sources/iterator.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/myString.dir/sources/iterator.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/sources/iterator.cpp -o CMakeFiles/myString.dir/sources/iterator.cpp.s
+
 # Object files for target myString
 myString_OBJECTS = \
-"CMakeFiles/myString.dir/sources/iterator.cpp.o" \
-"CMakeFiles/myString.dir/sources/myString.cpp.o"
+"CMakeFiles/myString.dir/sources/myString.cpp.o" \
+"CMakeFiles/myString.dir/sources/iterator.cpp.o"
 
 # External object files for target myString
 myString_EXTERNAL_OBJECTS =
 
-libmyString.so: CMakeFiles/myString.dir/sources/iterator.cpp.o
 libmyString.so: CMakeFiles/myString.dir/sources/myString.cpp.o
+libmyString.so: CMakeFiles/myString.dir/sources/iterator.cpp.o
 libmyString.so: CMakeFiles/myString.dir/build.make
 libmyString.so: CMakeFiles/myString.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/leva/Documents/BSUIR/Semester_2/LB5/Task_2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX shared library libmyString.so"

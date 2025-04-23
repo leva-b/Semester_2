@@ -1,5 +1,17 @@
-#include "../headers/bitset.h"
 #include "bitset.h"
+
+template <size_t N>
+Bitset<N> operator|(const Bitset<N> &first, const Bitset<N> &other);
+
+template <size_t N>
+Bitset<N> operator&(const Bitset<N> &first, const Bitset<N> &other);
+
+template <size_t N>
+Bitset<N> operator^(const Bitset<N> &first, const Bitset<N> &other);
+
+
+//#include "../headers/bitset.h"
+
 #include <stdexcept>
 
 template <size_t N>
@@ -22,6 +34,33 @@ template <size_t N>
 bool Bitset<N>::operator!=(const Bitset<N> &other) const
 {
     return !(*this == other);
+}template <size_t N>
+size_t Bitset<N>::count() const
+{
+    size_t size = 0;
+
+    // Обрабатываем все полные блоки
+    for (size_t i = 0; i < BLOCKS_COUNT; i++)
+    {
+        uint32_t block = m_data[i];
+
+        // Быстрый подсчет битов в блоке
+        while (block)
+        {
+            size += block & 1;
+            block >>= 1;
+        }
+    }
+
+    const size_t total_bits = BLOCKS_COUNT * BLOCK_SIZE;
+    if (total_bits > N)
+    {
+        const size_t extra_bits = total_bits - N;
+        const uint32_t mask = (1u << extra_bits) - 1;
+        size -= __builtin_popcount(m_data[BLOCKS_COUNT - 1] & mask);
+    }
+
+    return size;
 }
 
 template <size_t N>
@@ -36,7 +75,7 @@ Bitset<N> Bitset<N>::operator~() const
 }
 
 template <size_t N>
-bool Bitset<N>::all() const
+bool Bitset<N>::all()
 {
     for (size_t i = 0; i < BLOCKS_COUNT - 1; i++)
     {
@@ -49,7 +88,7 @@ bool Bitset<N>::all() const
     {
         uint32_t mask = (1u << last_block_bits) - 1;
         m_data[BLOCKS_COUNT - 1] = (m_data[BLOCKS_COUNT - 1] << (BLOCK_SIZE - last_block_bits - 1)) >> (BLOCK_SIZE - last_block_bits - 1);
-        return (mask & (m_data[BLOCKS_COUNT - 1] << (BLOCK_SIZE - last_block_bits - 1)) == mask;
+        return (mask & (m_data[BLOCKS_COUNT - 1] << (BLOCK_SIZE - last_block_bits - 1))) == mask;
     }
 
     return true;
@@ -73,33 +112,6 @@ bool Bitset<N>::none() const
 }
 
 template <size_t N>
-size_t Bitset<N>::count() const
-{
-    size_t cnt = 0;
-
-    for (size_t i = 0; i < BLOCKS_COUNT; i++)
-    {
-        uint32_t block = m_data[i];
-
-        while (block)
-        {
-            size += block & 1;
-            block >>= 1;
-        }
-    }
-
-    const size_t total_bits = BLOCKS_COUNT * BLOCK_SIZE;
-    if (total_bits > N)
-    {
-        const size_t extra_bits = total_bits - N;
-        const uint32_t mask = (1u << extra_bits) - 1;
-        size -= __builtin_popcount(m_data[BLOCKS_COUNT - 1] & mask);
-    }
-
-    return size;
-}
-
-template <size_t N>
 Bitset<N> &Bitset<N>::flip()
 {
     for (size_t i = 0; i < BLOCKS_COUNT; i++)
@@ -117,7 +129,7 @@ Bitset<N> &Bitset<N>::flip(size_t pos)
     {
         throw std::out_of_range("Position out of range");
     }
-    m_data[pos / BLOCK_SIZE] ^= (1u << (pos % BLOCK_SIZE - 1));
+    m_data[pos / BLOCK_SIZE] ^= (1u << (pos % BLOCK_SIZE));
 
     return *this;
 }
@@ -161,14 +173,14 @@ Bitset<N> &Bitset<N>::set(size_t pos, bool val)
         throw std::out_of_range("Position out of range");
     }
 
-    uint32_t number = 1u << (pos % BLOCK_SIZE - 1 != 0 ? pos % BLOCK_SIZE - 1 : 31);
-    if (val)
-    {
-        m_data[pos / BLOCK_SIZE] |= number;
-    }
-    else
-    {
-        m_data[pos / BLOCK_SIZE] &= ~number;
+    const size_t block_index = pos / BLOCK_SIZE;
+    const size_t bit_offset = pos % BLOCK_SIZE;
+    const uint32_t mask = 1u << bit_offset;
+
+    if (val) {
+        m_data[block_index] |= mask;
+    } else {
+        m_data[block_index] &= ~mask;
     }
     return *this;
 }
@@ -193,12 +205,11 @@ template <size_t N>
 std::string Bitset<N>::to_string() const
 {
 
-    std::string result(N, '0');
-    for (size_t i = 0; i < N; ++i)
-    {
-        if (test(i))
-            result[N - 1 - i] = '1';
+    std::string result;
+    for (size_t i = N; i > 0; --i) {
+        result += test(i - 1) ? '1' : '0';
     }
+
     return result;
 }
 
@@ -208,7 +219,7 @@ unsigned long Bitset<N>::to_ulong() const
     unsigned long number = 0;
     for (size_t i = 0; i < N; i++)
     {
-        number += ((m_data[i / BLOCK_SIZE] >> (i % BLOCK_SIZE - 1)) & 1) * (1u << i);
+        number += ((m_data[i / BLOCK_SIZE] >> (i % BLOCK_SIZE)) & 1) * (1u << i);
     }
     return number;
 }
@@ -219,54 +230,36 @@ unsigned long long Bitset<N>::to_ullong() const
     unsigned long long number = 0;
     for (size_t i = 0; i < N; i++)
     {
-        number += ((m_data[i / BLOCK_SIZE] >> (i % BLOCK_SIZE - 1)) & 1) * (1u << i);
+        number += ((m_data[i / BLOCK_SIZE] >> (i % BLOCK_SIZE)) & 1) * (1u << i);
     }
     return number;
 }
 
-template <size_t N>
-Bitset<N> operator|(const Bitset<N> &first, const Bitset<N> &other)
-{
-    if (&first == &other)
-    {
-        return first;
+template<size_t N>
+Bitset<N> operator|(const Bitset<N>& first, const Bitset<N>& other) {
+    Bitset<N> result;
+    for (size_t i = 0; i < Bitset<N>::BLOCKS_COUNT; ++i) {
+        result.m_data[i] = first.m_data[i] | other.m_data[i];
     }
-    Bitset<N> tmp;
-    for (size_t i = 0; i < Bitset<N>::BLOCKS_COUNT; i++)
-    {
-        tmp.m_data[i] = first.m_data[i] | other.m_data[i];
-    }
-    return tmp;
+    return result;
 }
 
-template <size_t N>
-Bitset<N> operator&(const Bitset<N> &first, const Bitset<N> &other)
-{
-    if (&first == &other)
-    {
-        return first;
+template<size_t N>
+Bitset<N> operator&(const Bitset<N>& first, const Bitset<N>& other) {
+    Bitset<N> result;
+    for (size_t i = 0; i < Bitset<N>::BLOCKS_COUNT; ++i) {
+        result.m_data[i] = first.m_data[i] & other.m_data[i];
     }
-    Bitset<N> tmp;
-    for (size_t i = 0; i < Bitset<N>::BLOCKS_COUNT; i++)
-    {
-        tmp.m_data[i] = first.m_data[i] & other.m_data[i];
-    }
-    return tmp;
+    return result;
 }
 
-template <size_t N>
-Bitset<N> operator^(const Bitset<N> &first, const Bitset<N> &other)
-{
-    if (&first == &other)
-    {
-        return Bitset<N>();
+template<size_t N>
+Bitset<N> operator^(const Bitset<N>& first, const Bitset<N>& other) {
+    Bitset<N> result;
+    for (size_t i = 0; i < Bitset<N>::BLOCKS_COUNT; ++i) {
+        result.m_data[i] = first.m_data[i] ^ other.m_data[i];
     }
-    Bitset<N> tmp;
-    for (size_t i = 0; i < Bitset<N>::BLOCKS_COUNT; i++)
-    {
-        tmp.m_data[i] = first.m_data[i] ^ other.m_data[i];
-    }
-    return tmp;
+    return result;
 }
 
 template <size_t N>
@@ -309,29 +302,8 @@ Bitset<N> &Bitset<N>::operator^=(const Bitset &right)
     return *this;
 }
 
-// template <size_t N>
-// Bitset<N> Bitset<N>::operator<<(size_t pos)
-// {
-//     if (pos >= N)
-//         return Bitset<N>();
-//     Bitset<N> result;
-//     size_t block_shift = pos / BLOCK_SIZE;
-//     size_t bit_shift = pos % BLOCK_SIZE;
 
-//     for (size_t i = 0; i < BLOCKS_COUNT; i++)
-//     {
-//         size_t src_index = i - block_shift;
-//         if (src_index < BLOCKS_COUNT)
-//         {
-//             result.m_data[i] = (m_data[src_index] << bit_shift);
-//         }
-//     }
-//     return result;
-// }
 
-// template <size_t N>
-// Bitset<N> Bitset<N>::operator>>(size_t pos)
-// {
-//     if (pos >= N)
-//         return Bitset<N>();
-// }
+template Bitset<32> operator|(const Bitset<32>&, const Bitset<32>&);
+template Bitset<32> operator&(const Bitset<32>&, const Bitset<32>&);
+template Bitset<32> operator^(const Bitset<32>&, const Bitset<32>&);

@@ -1,7 +1,7 @@
 #include "../headers/myString.h"
-#include <cstring>
 #include <clocale>
 #include <stdexcept>
+#include <iostream>
 
 String::String() : length_(min_size), capacity_(min_capacity)
 {
@@ -15,6 +15,11 @@ String &String::assign(const char *other)
     {
         reserve(length_other * 2);
     }
+    for (size_t i = 0; i <= length_other; i++)
+    {
+        str_[i] = other[i];
+    }
+    return *this;
 }
 
 String::Iterator String::begin()
@@ -138,174 +143,282 @@ size_t String::length() { return length_; }
 
 size_t String::size() { return length_; }
 
-String *String::memmove(const char *s2, size_t n)
+void *String::memcpy(void *s1, const void *s2, size_t n)
 {
-    if (!s2 || !str_)
+    if (s1 == nullptr || s2 == nullptr)
     {
-        return nullptr;
+        return s1;
     }
-    if (n > capacity_)
+    char *dest = static_cast<char *>(s1);
+    const char *src = static_cast<const char *>(s2);
+    for (size_t i = 0; i < n; i++)
     {
-        reserve(n * 2);
+        dest[i] = src[i];
     }
-    if ((str_.get() > s2 && str_.get() < s2 + n) || (s2 > str_.get() && s2 < str_.get() + n))
+    return s1;
+}
+
+void *String::memmove(void *s1, const void *s2, size_t n)
+{
+    if (s1 == nullptr || s2 == nullptr || s1 == s2 || n == 0)
     {
-        std::unique_ptr<char[]> temp(new char[n]);
+        return s1;
+    }
+
+    char *dest = static_cast<char *>(s1);
+    const char *src = static_cast<const char *>(s2);
+    if (s1 > s2 && s1 < src + n)
+    {
         for (size_t i = 0; i < n; ++i)
         {
-            temp[i] = s2[i];
-        }
-        for (size_t i = 0; i < n; ++i)
-        {
-            str_.get()[i] = temp[i];
+            dest[i] = src[i];
         }
     }
     else
     {
-        for (size_t i = 0; i < n; ++i)
+        for (size_t i = n; i > 0; --i)
         {
-            str_.get()[i] = s2[i];
+            dest[i - 1] = src[i - 1];
         }
     }
 
-    length_ = n;
-    str_[length_] = '\0';
-
-    return this;
+    return s1;
 }
 
-String &String::strncpy(const char *s, size_t n)
+char *String::strcpy(char *s1, const char *s2)
 {
-    if (capacity_ <= n)
+    if (s1 == nullptr || s2 == nullptr)
     {
-        resize(n);
+        return s1;
     }
+    size_t size_2 = strlen(s2);
+    for (size_t i = 0; i <= size_2; i++)
+    {
+        s1[i] = s2[i];
+    }
+    return s1;
+}
+
+char *String::strncpy(char *s1, const char *s2, size_t n)
+{
+    if (s1 == nullptr || s2 == nullptr)
+    {
+        return s1;
+    }
+    size_t i;
+    for (i = 0; i < n && s2[i] != '\0'; i++)
+    {
+        s1[i] = s2[i];
+    }
+    for (; i < n; i++)
+    {
+        s1[i] = '\0';
+    }
+    return s1;
+}
+
+char *String::strcat(char *s1, const char *s2)
+{
+    if (s1 == nullptr || s2 == nullptr)
+    {
+        return s1;
+    }
+    char *ptr = s1 + strlen(s1);
+    while ((*ptr++ = *s2++) != '\0')
+        ;
+    return s1;
+}
+
+char *String::strncat(char *s1, const char *s2, size_t n)
+{
+    if (s1 == nullptr || s2 == nullptr || n == 0)
+    {
+        return s1;
+    }
+    char *ptr = s1 + strlen(s1);
+    size_t i;
+    for (i = 0; i < n && s2[i] != '\0'; i++)
+    {
+        *ptr++ = s2[i];
+    }
+    *ptr = '\0';
+    return s1;
+}
+
+int String::memcmp(const void *s1, const void *s2, size_t n)
+{
+    const char *ptr_1 = static_cast<const char *>(s1);
+    const char *ptr_2 = static_cast<const char *>(s2);
     for (size_t i = 0; i < n; i++)
     {
-        str_[i] = s[i];
+        if (ptr_1[i] - ptr_2[i] != 0)
+            return ptr_1[i] - ptr_2[i];
     }
-    return *this;
-}
-
-String &String::strcat(const char *s2)
-{
-    size_t old_length = length_;
-    if (capacity_ <= length_ + strlen(s2))
-    {
-        resize(length_ + strlen(s2));
-    }
-    for (size_t i = old_length; i < length_; i++)
-    {
-        str_[i] = s2[i - old_length];
-    }
-    return *this;
-}
-
-String &String::strncat(const char *s2, size_t n)
-{
-    size_t old_length = length_;
-    if (capacity_ <= length_ + n)
-    {
-        resize(length_ + n);
-    }
-    for (size_t i = old_length; i < length_; i++)
-    {
-        str_[i] = s2[i - old_length];
-    }
-    return *this;
-}
-
-int String::memcmp(const void *s2, size_t n)
-{
-    const char *str2 = static_cast<const char *>(s2);
-
-    size_t compare_len = (n > length_ + 1) ? length_ + 1 : n;
-
-    for (size_t i = 0; i < compare_len; ++i)
-    {
-        if (str_[i] < str2[i])
-        {
-            return -1;
-        }
-        else if (str_[i] > str2[i])
-        {
-            return 1;
-        }
-    }
-
-    if (length_ < n)
-    {
-        return -1;
-    }
-    else if (length_ > n)
-    {
-        return 1;
-    }
-
     return 0;
 }
 
-int String::strcmp(const char *s2)
+int String::strcmp(const char *s1, const char *s2)
 {
-    size_t compare_len = (strlen(s2) > length_) ? length_ : strlen(s2);
-
-    for (size_t i = 0; i < compare_len; ++i)
+    std::cout << "custom" << std::endl;
+    while (*s1 && *s2 && *s1 == *s2)
     {
-        if (str_[i] < s2[i])
-        {
-            return -1;
-        }
-        else if (str_[i] > s2[i])
-        {
-            return 1;
-        }
+        s1++;
+        s2++;
     }
-
-    if (length_ < strlen(s2))
-    {
-        return -1;
-    }
-    else if (length_ > strlen(s2))
-    {
-        return 1;
-    }
-
-    return 0;
+    return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
-size_t String::strxfrm(const char *s1, size_t n)
+int String::strncmp(const char *s1, const char *s2, size_t n)
 {
-    if (s1 == nullptr)
-        return length_ + 1;
+    if (n == 0)
+        return 0;
+    while (*s1 && *s2 && *s1 == *s2 && n--)
+    {
+        s1++;
+        s2++;
+    }
+    return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
-// int String::strcoll(const char *s2)
-// {
-//     const char *locale = setlocale(LC_COLLATE, nullptr);
-//     if (!locale)
-//     {
-//         return strcmp(s2);
-//     }
+size_t String::strspn(const char *str, const char *accept)
+{
+    size_t count = 0;
 
-//     // Определяем размер буферов
-//     size_t len1 = strxfrm(nullptr, s1, 0);
-//     size_t len2 = strxfrm(nullptr, s2, 0);
+    while (*str != '\0')
+    {
+        const char *a = accept;
+        bool found = false; // теперь тип bool
 
-//     // Выделяем память через new[]
-//     std::unique_ptr<char[]> buf1(new char[len1 + 1]);
-//     std::unique_ptr<char[]> buf2(new char[len2 + 1]);
+        while (*a != '\0')
+        {
+            if (*a == *str)
+            {
+                found = true;
+                break;
+            }
+            a++;
+        }
 
-//     // Преобразуем строки
-//     strxfrm(buf1.get(), s1, len1 + 1);
-//     strxfrm(buf2.get(), s2, len2 + 1);
+        if (!found)
+        {
+            break;
+        }
 
-//     // Сравниваем
-//     return strcmp(buf1.get(), buf2.get());
-// }
+        count++;
+        str++;
+    }
+
+    return count;
+}
+
+char *String::strpbrk(const char *str, const char *accept)
+{
+    for (; *str != '\0'; str++)
+    {
+        for (const char *a = accept; *a != '\0'; a++)
+        {
+            if (*a == *str)
+            {
+                return (char *)str;
+            }
+        }
+    }
+    return NULL;
+}
+
+int String::strcoll(const char *s1, const char *s2)
+{
+    // setlocale(LC_COLLATE, "ru_RU.UTF_+-8");
+
+    return strcmp(s1, s2);
+}
+
+size_t String::strxfrm(char *s1, const char *s2, size_t n)
+{
+    size_t len = strlen(s2);
+    if (len + 1 > n)
+    {
+        len = n - 1; // Обрезаем
+    }
+    strncpy(s1, s2, len);
+    s1[len] = '\0';
+    return len + 1; // Возвращаем количество символов с учетом нуль-терминатора
+}
+
+char *String::strtok(char *s1, const char *s2)
+{
+    static char *saved_ptr = NULL;
+    char *tocken_start;
+    if (s1 != NULL)
+    {
+        saved_ptr = s1;
+    }
+    else if (saved_ptr == NULL)
+    {
+        return NULL;
+    }
+
+    char *token_end = strpbrk(saved_ptr, s2);
+    if (token_end != NULL)
+    {
+        *token_end = '\0';
+        saved_ptr = token_end + 1;
+    }
+    else
+    {
+        saved_ptr = NULL;
+    }
+
+    return saved_ptr - (token_end ? 1 : 0);
+}
+
+void *String::memset(void *s, int c, size_t n)
+{
+    if (s == nullptr)
+    {
+        return s;
+    }
+    unsigned char *src = static_cast<unsigned char *>(s);
+    while (n--)
+    {
+        *src++ = static_cast<unsigned char>(c);
+    }
+    return s;
+}
+
+char *String::strerror(int errnum)
+{
+    static char *errors[] =
+        {
+            "No error",
+            "Operation not permitted",
+            "No such file or directory",
+            "No such process",
+            "Interrupted system call",
+            "Input/output error",
+        };
+
+    if (errnum >= 0 && errnum < sizeof(errors) / sizeof(errors[0]))
+    {
+        return errors[errnum];
+    }
+    else
+    {
+        return "Unknown error";
+    }
+}
+
+size_t String::strlen(const char *s)
+{
+    size_t length = 0;
+    while (s[length++] != '\0')
+        ;
+    return --length;
+}
 
 String &String::operator+(const String &other)
 {
-    strncat(other.str_.get(), other.length_);
+    // strncat(other.str_.get(), other.length_);
     return *this;
 }
 
