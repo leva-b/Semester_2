@@ -4,21 +4,22 @@
 #include <string>
 #include <vector>
 
-class MazeFromFileParser : public MazeParser
+class   MazeFromFileParser : public MazeParser
 {
 private:
     std::string filepath_;
     std::vector<std::vector<char>> grid_;
-    const char wall_symbol_;
-    const char path_symbol_;
+
     bool isVertex(int row, int column);
 
 public:
-
     MazeFromFileParser(std::string filepath, char wall_symbol, char path_symbol);
     MazeFromFileParser(std::vector<std::vector<char>> grid, char wall_symbol, char path_symbol);
     Graph buildGraph() override;
-    void parse() override;
+    void parse();
+    std::vector<std::vector<char>>& getMazeData();
+
+    const std::vector<std::vector<char>>& getMazeConstData() const;
 };
 
 #endif // MAZEFROMFILEPARSER_H

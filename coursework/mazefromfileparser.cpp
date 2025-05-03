@@ -4,11 +4,11 @@
 #include <math.h>
 
 MazeFromFileParser::MazeFromFileParser(std::string filepath, char wall_symbol, char path_symbol):
-    MazeParser(), filepath_(filepath), wall_symbol_(wall_symbol), path_symbol_(path_symbol){}
+    MazeParser(wall_symbol, path_symbol), filepath_(filepath){parse();}
 
 
 MazeFromFileParser::MazeFromFileParser(std::vector<std::vector<char>> grid, char wall_symbol, char path_symbol):
-    MazeParser(), filepath_(), grid_(grid), wall_symbol_(wall_symbol), path_symbol_(path_symbol){}
+    MazeParser(wall_symbol, path_symbol), filepath_(), grid_(grid){}
 
 Graph MazeFromFileParser::buildGraph()
 {
@@ -62,4 +62,13 @@ void MazeFromFileParser::parse()
     while (std::getline(file, line)) {
         grid_.emplace_back(line.begin(), line.end());
     }
+}
+
+
+std::vector<std::vector<char>>& MazeFromFileParser::getMazeData() {
+    return grid_;
+}
+
+const std::vector<std::vector<char>>& MazeFromFileParser::getMazeConstData() const{
+    return grid_;
 }

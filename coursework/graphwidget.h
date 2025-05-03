@@ -10,7 +10,7 @@ class GraphWidget : public QWidget {
     Q_OBJECT
 public:
     explicit GraphWidget(QWidget *parent = nullptr);
-    void updateGraphFromMaze(const std::vector<std::vector<int>> &maze);
+    void updateGraphFromMaze(const std::vector<std::vector<char>> &maze);
 
 public slots:
     void findShortestPath();

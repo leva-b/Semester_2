@@ -34,7 +34,7 @@ GraphWidget::GraphWidget(QWidget *parent) : QWidget(parent)
     edges.push_back({1, 2, 3});
 }
 
-void GraphWidget::updateGraphFromMaze(const std::vector<std::vector<int>> &maze)
+void GraphWidget::updateGraphFromMaze(const std::vector<std::vector<char>> &maze)
 {
     nodes.clear();
     edges.clear();
@@ -45,7 +45,7 @@ void GraphWidget::updateGraphFromMaze(const std::vector<std::vector<int>> &maze)
 
     for (size_t y = 0; y < maze.size(); ++y) {
         for (size_t x = 0; x < maze[y].size(); ++x) {
-            if (maze[y][x] == 0) { // Path
+            if (maze[y][x] == '0') { // Path
                 // Добавляем смещение от краев и увеличиваем расстояние
                 nodes.push_back({QPoint(x * spacing + 100, y * spacing + 100), nodeId++});
             }

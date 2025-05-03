@@ -7,6 +7,7 @@
 // #include "graphfromfileparser.h"
 #include <QStackedWidget>
 #include <QPropertyAnimation>
+#include <QScrollArea>
 
 class MazeWidget;
 class GraphWidget;
@@ -35,6 +36,8 @@ private:
     GraphWidget *graphWidget;
     QPropertyAnimation *animation = nullptr;
     bool isMazeView = true;
+    QScrollArea* mazeScrollArea;
+    QScrollArea* graphScrollArea;
 };
 
 #endif // MAINWINDOW_H
