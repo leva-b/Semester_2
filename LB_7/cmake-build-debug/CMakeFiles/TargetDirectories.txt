@@ -1,0 +1,5 @@
+/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/CMakeFiles/LB_7.dir
+/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/CMakeFiles/LB_7_autogen_timestamp_deps.dir
+/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/CMakeFiles/LB_7_autogen.dir

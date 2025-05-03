@@ -3,9 +3,10 @@
 #include <QMessageBox>
 #include <QPalette>
 #include <QFileDialog>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
-    elapsedTime(0),         // Добавлено
+    elapsedTime(0),
     totalCharsTyped(0),
     wordGenerator(new WordGenerator()),
     currentCharIndex(0),
@@ -31,7 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(startButton, &QPushButton::clicked, this, &MainWindow::startTraining);
     connect(openFileButton, &QPushButton::clicked, this, &MainWindow::openFile);
     connect(timer, &QTimer::timeout, [this]() {
-        elapsedTime += 100; // увеличиваем время на 100 мс при каждом срабатывании таймера
+        elapsedTime += 100;
     });
 }
 
@@ -145,11 +146,11 @@ void MainWindow::createKeyboard() {
     const int btnHeight = 50;
 
     buttonStyle = "QPushButton {"
-                          "    font-size: 14px;"       // Увеличиваем размер шрифта
-                          "    text-align: center;"    // Выравнивание по центру
-                          "    padding: 3px;"          // Отступы внутри кнопки
-                          "    border-radius: 5px;"    // Закругленные углы
-                          "    border: 1px solid #ccc;" // Граница кнопки
+                          "    font-size: 14px;"
+                          "    text-align: center;"
+                          "    padding: 3px;"
+                          "    border-radius: 5px;"
+                          "    border: 1px solid #ccc;"
                           "}";
 
     // --- Верхний ряд ---

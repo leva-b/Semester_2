@@ -12,7 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->setupUi(this);
     if (!m_stringLib.load()) {
-        qDebug() << "Ошибка загрузки библиотеки:" << m_stringLib.errorString();
+        qDebug() << "Error:" << m_stringLib.errorString();
         return;
     }
 

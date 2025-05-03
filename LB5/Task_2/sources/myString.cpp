@@ -335,14 +335,18 @@ int String::strcoll(const char *s1, const char *s2)
 
 size_t String::strxfrm(char *s1, const char *s2, size_t n)
 {
-    size_t len = strlen(s2);
-    if (len + 1 > n)
+    size_t len = 0;
+    while (s2[len])
+        len++;
+
+    if (s1 && n > 0)
     {
-        len = n - 1; // Обрезаем
+        size_t to_copy = (len < n) ? len : n - 1;
+        memcpy(s1, s2, to_copy);
+        s1[to_copy] = '\0';
     }
-    strncpy(s1, s2, len);
-    s1[len] = '\0';
-    return len + 1; // Возвращаем количество символов с учетом нуль-терминатора
+
+    return len;
 }
 
 char *String::strtok(char *s1, const char *s2)

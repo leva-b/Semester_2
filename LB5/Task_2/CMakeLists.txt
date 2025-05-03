@@ -22,11 +22,3 @@ target_compile_definitions(myString PRIVATE MYSTRING_API= "__attribute__((visibi
 target_include_directories(myString PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/headers
 )
-
-# target_link_libraries(${PROJECT_NAME} PRIVATE myString)
-# target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/headers)
-# target_compile_definitions(myString PRIVATE MYSTRING_API)
-
-# target_compile_options(my_string PRIVATE -fvisibility=hidden)
-
-# target_compile_definitions(myString PUBLIC _IMPORTING)

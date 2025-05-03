@@ -308,30 +308,3 @@ Bitset<N> &Bitset<N>::operator^=(const Bitset &right)
     }
     return *this;
 }
-
-// template <size_t N>
-// Bitset<N> Bitset<N>::operator<<(size_t pos)
-// {
-//     if (pos >= N)
-//         return Bitset<N>();
-//     Bitset<N> result;
-//     size_t block_shift = pos / BLOCK_SIZE;
-//     size_t bit_shift = pos % BLOCK_SIZE;
-
-//     for (size_t i = 0; i < BLOCKS_COUNT; i++)
-//     {
-//         size_t src_index = i - block_shift;
-//         if (src_index < BLOCKS_COUNT)
-//         {
-//             result.m_data[i] = (m_data[src_index] << bit_shift);
-//         }
-//     }
-//     return result;
-// }
-
-// template <size_t N>
-// Bitset<N> Bitset<N>::operator>>(size_t pos)
-// {
-//     if (pos >= N)
-//         return Bitset<N>();
-// }

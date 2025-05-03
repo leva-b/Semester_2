@@ -1,0 +1,15 @@
+# ninja log v6
+2	37	1745754339139611068	LB_7_autogen/timestamp	4a244890733b0037
+2	37	1745754339139611068	LB_7_autogen/mocs_compilation.cpp	4a244890733b0037
+2	37	1745754339139611068	/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/LB_7_autogen/timestamp	4a244890733b0037
+2	37	1745754339139611068	/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/LB_7_autogen/mocs_compilation.cpp	4a244890733b0037
+39	5297	1745754339151610567	CMakeFiles/LB_7.dir/main.cpp.o	dd406b74b52c1ff
+39	70	1745754339151610567	CMakeFiles/LB_7.dir/LB_7_autogen/mocs_compilation.cpp.o	534c8c1a3fd53c85
+5300	6160	1745754344415392582	LB_7	fc261882ce7f12b0
+4	35	1745870970964872435	LB_7_autogen/timestamp	d94293660959dd62
+4	35	1745870970964872435	LB_7_autogen/mocs_compilation.cpp	d94293660959dd62
+4	35	1745870970964872435	/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/LB_7_autogen/timestamp	d94293660959dd62
+4	35	1745870970964872435	/home/leva/Documents/BSUIR/Semester_2/LB_7/cmake-build-debug/LB_7_autogen/mocs_compilation.cpp	d94293660959dd62
+35	52	1745870970996873138	CMakeFiles/LB_7.dir/LB_7_autogen/mocs_compilation.cpp.o	534c8c1a3fd53c85
+35	1056	1745870970996873138	CMakeFiles/LB_7.dir/main.cpp.o	dd406b74b52c1ff
+1056	1283	1745870972016895531	LB_7	fc261882ce7f12b0

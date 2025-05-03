@@ -168,3 +168,9 @@ void MainWindow::on_pushButton_14_clicked(){
     ui->result->setPlainText(QString::fromStdString((~value_1).to_string()));
 }
 
+
+void MainWindow::on_pushButton_10_clicked()
+{
+    ui->result->setPlainText(QString::number(value_1.to_ulong()));
+}
+

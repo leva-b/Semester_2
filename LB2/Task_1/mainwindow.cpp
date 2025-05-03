@@ -4,6 +4,7 @@
 #include <QInputDialog>
 #include "date.h"
 #include <fstream>
+
 MainWindow::~MainWindow() {
     delete tableWidget;
     delete openButton;

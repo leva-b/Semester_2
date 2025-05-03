@@ -48,6 +48,8 @@ private slots:
     void on_pushButton_13_clicked();
     void on_pushButton_14_clicked();
 
+    void on_pushButton_10_clicked();
+
 private:
     Ui::MainWindow *ui;
     Bitset<32> value_1;

@@ -5,7 +5,6 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDebug>
-#include "node.h"
 #include <QPushButton>
 #include <QTreeWidget>
 
@@ -25,7 +24,6 @@ public:
     void recursiveDirTraversal(const QString& path, QTreeWidgetItem* parentItem);
     void openFolder();
     void showFileSystem();
-    void addNodeToTreeWidget(QTreeWidgetItem* parentItem, Node* node) ;
     void openFile(QTreeWidgetItem *item);
     QTreeWidget* treeWidget;
 

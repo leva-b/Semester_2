@@ -1,4 +1,5 @@
 #include "parameterdialog.h"
+
 ParameterDialog::ParameterDialog(const QStringList &labels, const QList<double> &initialValues, QWidget *parent)
     : QDialog(parent) {
     setWindowTitle("Просмотреть/Изменить");
