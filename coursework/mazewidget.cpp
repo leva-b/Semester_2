@@ -12,13 +12,13 @@ MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent)
 {
     std::vector<std::vector<char>> maze = {
         {'1', '1', '1', '1', '1', '1', '1', '1'},
-        {'1', '0', '0', '0', '0', '0', '0', '1'},
+        {'0', '0', '0', '0', '0', '0', '0', '1'},
         {'1', '0', '1', '1', '1', '0', '1', '1'},
         {'1', '0', '0', '0', '1', '0', '0', '1'},
         {'1', '1', '1', '0', '1', '1', '0', '1'},
         {'1', '0', '0', '0', '0', '0', '0', '1'},
         {'1', '0', '1', '1', '1', '1', '0', '1'},
-        {'1', '1', '1', '1', '1', '1', '1', '1'}
+        {'1', '0', '1', '1', '1', '1', '1', '1'}
     };
     parser = new MazeFromFileParser(maze, '1', '0');
 
@@ -55,12 +55,12 @@ void MazeWidget::loadMazeFromFile()
             delete parser;
             qDebug() << filePath.toStdString();
             parser = new MazeFromFileParser(filePath.toStdString(), wall_symbol, path_symbol);
-            for(int i = 0; i < parser->getMazeConstData().size(); i++){
-                for(int j = 0; j < parser->getMazeConstData()[i].size(); j++){
-                    qDebug() << parser->getMazeConstData()[i][j];
-                }
-                qDebug() << "\n";
-            }
+            // for(int i = 0; i < parser->getMazeConstData().size(); i++){
+            //     for(int j = 0; j < parser->getMazeConstData()[i].size(); j++){
+            //         qDebug() << parser->getMazeConstData()[i][j];
+            //     }
+            //     qDebug() << "\n";
+            // }
             update();
         }catch(const std::runtime_error& e){
             QMessageBox::warning(nullptr, "Error", "Cannot open file for reading:");
@@ -70,8 +70,49 @@ void MazeWidget::loadMazeFromFile()
     }
 }
 
-void MazeWidget::findWayThroughMaze(){
+// mazewidget.cpp
+void MazeWidget::findWayThroughMaze() {
+    try {
+        Graph graph = parser->buildGraph();
+        graph.dijkstra();
+        qDebug() << "that's ok";
+        auto path = graph.getPath();
 
+        qDebug() << "that's ok";
+        // Преобразование индексов в координаты
+        mazePath.clear();
+         qDebug() << "that's ok";
+        const auto& vertices = parser->getVerticesPositions();
+        qDebug() << "path.siz() "<<path.size();
+        int mazeWidth = getMazeConstData()[0].size() * cellSize;
+        int startX = (width() - mazeWidth) / 2;
+        int startY = openFileButton->height() + 10;
+        for(size_t node_index : path) {
+            if(node_index < vertices.size()) {
+                // Получаем координаты клетки из парсера
+                int row = vertices[node_index].first;
+                int col = vertices[node_index].second;
+                qDebug() << "that's ok";
+                // Конвертация в экранные координаты
+                mazePath.push_back(QPoint(
+                    startX + col * cellSize + cellSize/2,  // Учет смещения лабиринта
+                    startY + row * cellSize + cellSize/2
+                    ));
+                qDebug() << "Point" <<col * cellSize + cellSize/2 << row * cellSize + cellSize/2;
+            }
+        }
+
+        update();
+    }catch (const std::exception& e) {
+        QMessageBox::critical(this, "Error", e.what());
+    }
+    catch(...) {
+        QMessageBox::warning(this, "Error", "Path not found");
+    }
+}
+
+bool MazeWidget::isCorrectMaze(){
+    return false;
 }
 
 std::vector<std::vector<char>>& MazeWidget::getMazeData()
@@ -97,12 +138,16 @@ void MazeWidget::paintEvent(QPaintEvent *event)
                             availableHeight / getMazeConstData().size());
     }
 
+
+    int mazeWidth = getMazeConstData()[0].size() * cellSize;
+    //int mazeHeight = getMazeConstData().size() * cellSize;
+    int startX = (width() - mazeWidth) / 2;
     int startY = openFileButton->height() + 10;
 
-    qDebug() << width()  << " " <<  height();    // Draw maze
+    //qDebug() << width()  << " " <<  height();    // Draw maze
     for (size_t y = 0; y < getMazeConstData().size(); ++y) {
         for (size_t x = 0; x < getMazeConstData()[y].size(); ++x) {
-            QRect cellRect(x * cellSize, y * cellSize + startY, cellSize, cellSize);
+            QRect cellRect(startX + x * cellSize, y * cellSize + startY, cellSize, cellSize);
             if (getMazeConstData()[y][x] == '1') {
                 painter.fillRect(cellRect, Qt::black); // Wall
             } else {
@@ -111,18 +156,32 @@ void MazeWidget::paintEvent(QPaintEvent *event)
             painter.drawRect(cellRect);
         }
     }
+    if(!mazePath.empty()) {
+        painter.setPen(QPen(Qt::red, 2));
+        qDebug() << "mazePath.size(): "<<mazePath.size();
+        for(size_t i = 1; i < mazePath.size(); ++i) {
+            painter.drawLine(mazePath[i-1], mazePath[i]);
+            qDebug() << mazePath[i-1] << ' ' << mazePath[i];
+        }
+    }
 }
 
 void MazeWidget::mousePressEvent(QMouseEvent *event)
 {
     if(parser->getMazeData().empty() || event->button() != Qt::LeftButton)
         return;
+
+    //int availableHeight = height() - openFileButton->height() - 10;
+    int mazeWidth = getMazeConstData()[0].size() * cellSize;
+    int mazeHeight = getMazeConstData().size() * cellSize;
+    int startX = (width() - mazeWidth) / 2;
     QPoint pos = event->pos();
     int startY = openFileButton->height() + 10;
 
     // Проверяем, что клик был в области лабиринта
-    if (pos.y() >= startY) {
-        int x = pos.x() / cellSize;
+    if (pos.y() >= startY && pos.y() < startY + mazeHeight &&
+        pos.x() >= startX && pos.x() < startX + mazeWidth) {
+        int x = (pos.x() - startX) / cellSize;
         int y = (pos.y() - startY) / cellSize;
 
         if (x >= 0 && y >= 0 &&
@@ -135,10 +194,39 @@ void MazeWidget::mousePressEvent(QMouseEvent *event)
 
 void MazeWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    QPoint posInMaze = event->pos();
-    if (rect().contains(posInMaze) && (event->buttons() & Qt::LeftButton)) {
-        toggleWall(posInMaze);
+    if(parser->getMazeData().empty() || !(event->buttons() & Qt::LeftButton))
+        return;
+
+    //int availableHeight = height() - openFileButton->height() - 10;
+    int mazeWidth = getMazeConstData()[0].size() * cellSize;
+    int mazeHeight = getMazeConstData().size() * cellSize;
+    int startX = (width() - mazeWidth) / 2;
+    int startY = openFileButton->height();
+
+
+    QPoint pos = event->pos();
+    if (pos.y() >= startY && pos.y() < startY + mazeHeight &&
+        pos.x() >= startX && pos.x() < startX + mazeWidth) {
+        int x = (pos.x() - startX) / cellSize;
+        int y = (pos.y() - startY) / cellSize;
+
+        if (x != lastCellPos.x() || y != lastCellPos.y()) {
+            lastCellPos = QPoint(x, y);
+
+            if (x >= 0 && y >= 0 &&
+                y < static_cast<int>(getMazeConstData().size()) &&
+                x < static_cast<int>(getMazeConstData()[y].size())) {
+                toggleWall(QPoint(x, y));
+            }
+        }
+    }else{
+        lastCellPos = QPoint(-1, -1);
     }
+}
+
+void MazeWidget::mouseReleaseEvent(QMouseEvent *event) {
+    Q_UNUSED(event);
+    lastCellPos = QPoint(-1, -1); // Сброс при отпускании кнопки
 }
 
 void MazeWidget::toggleWall(const QPoint &pos)
@@ -190,6 +278,7 @@ QSize MazeWidget::sizeHint() const
     if (parser->getMazeData().empty()) {
         return QSize(800, 600);
     }
+
     return QSize(parser->getMazeData()[0].size() * cellSize * scaleFactor,
                  parser->getMazeData().size() * cellSize * scaleFactor + openFileButton->height() + 10);
 }

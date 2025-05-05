@@ -15,6 +15,7 @@ public:
     const std::vector<std::vector<char>>& getMazeConstData() const;
     void wheelEvent(QWheelEvent* event) override;
     QSize sizeHint() const override;
+    void clearPath();
 
 private slots:
     void findWayThroughMaze();
@@ -24,20 +25,24 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
     double scaleFactor = 1.0;
     const int minCellSize = 5;
+    const char wall_symbol = '1';
+    const char path_symbol = '0';
     //QWidget* mazeDisplay;
     //std::vector<std::vector<char>> maze;
     MazeFromFileParser *parser;
     int cellSize = 20;
     QPushButton *findPathButton;
     QPushButton *openFileButton;
-    const char wall_symbol = '1';
-    const char path_symbol = '0';
+    QPoint lastCellPos = QPoint(-1, -1);
+    std::vector<QPoint> mazePath;
     void drawPath(QPainter &painter, const std::vector<QPoint> &path);
     void toggleWall(const QPoint &pos);
+    bool isCorrectMaze();
     //void setupUI();
 };
 
