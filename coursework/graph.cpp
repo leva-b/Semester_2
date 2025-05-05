@@ -36,8 +36,7 @@ void Graph::dijkstra(){
         }
     }
     if (distance[end_index] == INT_MAX) {
-        QMessageBox::warning(nullptr, "No Path", "The maze has no exit.");
-        return;
+        throw("path does not exist");
     }
 }
 

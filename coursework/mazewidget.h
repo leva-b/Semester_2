@@ -40,7 +40,11 @@ private:
     QPushButton *openFileButton;
     QPoint lastCellPos = QPoint(-1, -1);
     std::vector<QPoint> mazePath;
-    void drawPath(QPainter &painter, const std::vector<QPoint> &path);
+    QTimer* animationTimer;
+    QColor pathColor;
+    std::vector<QPoint> pathCells;  // Все клетки пути (x, y)
+    int currentPathIndex = 0;        //
+
     void toggleWall(const QPoint &pos);
     bool isCorrectMaze();
     //void setupUI();

@@ -7,8 +7,9 @@
 #include <QVBoxLayout>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QTimer>
 
-MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent)
+MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent), currentPathIndex(0),pathColor(Qt::red)
 {
     std::vector<std::vector<char>> maze = {
         {'1', '1', '1', '1', '1', '1', '1', '1'},
@@ -42,6 +43,15 @@ MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent)
 
     mainLayout->addStretch();
 
+    animationTimer = new QTimer(this);
+    connect(animationTimer, &QTimer::timeout, this, [this]() {
+        if (currentPathIndex < static_cast<int>(pathCells.size())) {
+            currentPathIndex++;
+            update();
+        } else {
+            animationTimer->stop();
+        }
+    });
     connect(openFileButton, &QPushButton::clicked, this, &MazeWidget::loadMazeFromFile);
     connect(findPathButton, &QPushButton::clicked, this, &MazeWidget::findWayThroughMaze);
 }
@@ -70,49 +80,65 @@ void MazeWidget::loadMazeFromFile()
     }
 }
 
-// mazewidget.cpp
 void MazeWidget::findWayThroughMaze() {
     try {
+        pathCells.clear();
+        currentPathIndex = 0;
+        animationTimer->stop();
+        if(!isCorrectMaze()){
+            QMessageBox::information(this, "Error", "The maze must have no more than two entry/exit points");
+            return;
+        }
         Graph graph = parser->buildGraph();
         graph.dijkstra();
-        qDebug() << "that's ok";
         auto path = graph.getPath();
 
-        qDebug() << "that's ok";
-        // Преобразование индексов в координаты
-        mazePath.clear();
-         qDebug() << "that's ok";
-        const auto& vertices = parser->getVerticesPositions();
-        qDebug() << "path.siz() "<<path.size();
-        int mazeWidth = getMazeConstData()[0].size() * cellSize;
-        int startX = (width() - mazeWidth) / 2;
-        int startY = openFileButton->height() + 10;
-        for(size_t node_index : path) {
-            if(node_index < vertices.size()) {
-                // Получаем координаты клетки из парсера
-                int row = vertices[node_index].first;
-                int col = vertices[node_index].second;
-                qDebug() << "that's ok";
-                // Конвертация в экранные координаты
-                mazePath.push_back(QPoint(
-                    startX + col * cellSize + cellSize/2,  // Учет смещения лабиринта
-                    startY + row * cellSize + cellSize/2
-                    ));
-                qDebug() << "Point" <<col * cellSize + cellSize/2 << row * cellSize + cellSize/2;
-            }
-        }
+        if (!path.empty()) {
+            const auto& vertices = parser->getVerticesPositions();
 
+            // Заполняем pathCells всеми клетками пути
+            for (size_t i = 0; i < path.size() - 1; ++i) {
+                auto start = vertices[path[i]];
+                auto end = vertices[path[i+1]];
+
+                // Добавляем все клетки между вершинами (горизонтально/вертикально)
+                if (start.first == end.first) { // Горизонтальный путь
+                    int step = start.second < end.second ? 1 : -1;
+                    for (int col = start.second; col != end.second; col += step) {
+                        pathCells.emplace_back(col, start.first);
+                    }
+                }else { // Вертикальный путь
+                    int step = start.first < end.first ? 1 : -1;
+                    for (int row = start.first; row != end.first; row += step) {
+                        pathCells.emplace_back(start.second, row);
+                    }
+                }
+            }
+            // Добавляем последнюю клетку
+            pathCells.emplace_back(vertices[path.back()].second,
+                                   vertices[path.back()].first);
+
+            animationTimer->start(1000/pathCells.size()); // Запускаем анимацию (100 мс на шаг)
+        }
         update();
-    }catch (const std::exception& e) {
-        QMessageBox::critical(this, "Error", e.what());
-    }
-    catch(...) {
+    } catch (const char* e) {
         QMessageBox::warning(this, "Error", "Path not found");
     }
 }
 
 bool MazeWidget::isCorrectMaze(){
-    return false;
+    int numberOfPath = 0;
+    for(size_t i = 0; i < getMazeConstData().size(); i++){
+        if(getMazeConstData()[i][0] == path_symbol)numberOfPath++;
+        if(getMazeConstData()[i][getMazeConstData()[i].size() - 1] == path_symbol)numberOfPath++;
+    }
+    for(size_t i = 0; i < getMazeConstData()[0].size(); i++){
+        if(getMazeConstData()[0][i] == path_symbol)
+            numberOfPath++;
+        if(getMazeConstData()[getMazeConstData().size() - 1][i] == path_symbol)
+            numberOfPath++;
+    }
+    return numberOfPath == 2;
 }
 
 std::vector<std::vector<char>>& MazeWidget::getMazeData()
@@ -148,22 +174,25 @@ void MazeWidget::paintEvent(QPaintEvent *event)
     for (size_t y = 0; y < getMazeConstData().size(); ++y) {
         for (size_t x = 0; x < getMazeConstData()[y].size(); ++x) {
             QRect cellRect(startX + x * cellSize, y * cellSize + startY, cellSize, cellSize);
+
             if (getMazeConstData()[y][x] == '1') {
-                painter.fillRect(cellRect, Qt::black); // Wall
+                painter.fillRect(cellRect, Qt::black); // Стена
             } else {
-                painter.fillRect(cellRect, Qt::white); // Path
+                painter.fillRect(cellRect, Qt::white); // Путь
             }
             painter.drawRect(cellRect);
         }
     }
-    if(!mazePath.empty()) {
-        painter.setPen(QPen(Qt::red, 2));
-        qDebug() << "mazePath.size(): "<<mazePath.size();
-        for(size_t i = 1; i < mazePath.size(); ++i) {
-            painter.drawLine(mazePath[i-1], mazePath[i]);
-            qDebug() << mazePath[i-1] << ' ' << mazePath[i];
-        }
+    for (int i = 0; i < currentPathIndex && i < static_cast<int>(pathCells.size()); ++i) {
+        int x = pathCells[i].x();
+        int y = pathCells[i].y();
+        QRect cellRect(startX + x * cellSize, startY + y * cellSize, cellSize, cellSize);
+
+        painter.fillRect(cellRect, pathColor);
+        painter.setPen(Qt::black);
+        painter.drawRect(cellRect);
     }
+
 }
 
 void MazeWidget::mousePressEvent(QMouseEvent *event)
@@ -231,31 +260,17 @@ void MazeWidget::mouseReleaseEvent(QMouseEvent *event) {
 
 void MazeWidget::toggleWall(const QPoint &pos)
 {
+    pathCells.clear();
+    currentPathIndex = 0;
+    animationTimer->stop();
     int x = pos.x();
-    int y = pos.y() ;
+    int y = pos.y();
 
     if (x >= 0 && y >= 0 && y < static_cast<int>(getMazeConstData().size()) && x < static_cast<int>(getMazeConstData()[y].size())) {
         getMazeData()[y][x] = getMazeConstData()[y][x] == '1' ? '0' : '1';
         update();
     }
 }
-
-
-void MazeWidget::drawPath(QPainter &painter, const std::vector<QPoint> &path)
-{
-    if (path.empty()) return;
-
-    painter.setPen(QPen(Qt::red, 2));
-    for (size_t i = 1; i < path.size(); ++i) {
-        QPoint prev = path[i-1];
-        QPoint current = path[i];
-        painter.drawLine(prev.x() * cellSize + cellSize/2,
-                         prev.y() * cellSize + cellSize/2,
-                         current.x() * cellSize + cellSize/2,
-                         current.y() * cellSize + cellSize/2);
-    }
-}
-
 
 void MazeWidget::wheelEvent(QWheelEvent* event)
 {
