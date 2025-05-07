@@ -120,7 +120,7 @@ const std::vector<std::pair<int, int>>& MazeFromFileParser::getVerticesPositions
     return vertices_positions_;
 }
 
-std::vector<std::vector<char>>& MazeFromFileParser::getMazeData() {
+    std::vector<std::vector<char>>& MazeFromFileParser::getMazeData() {
     return grid_;
 }
 

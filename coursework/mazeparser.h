@@ -13,4 +13,4 @@ public:
     virtual ~MazeParser(){}
 };
 
-#endif // MAZEPARSER_H
+#endif // MAZEPARSER

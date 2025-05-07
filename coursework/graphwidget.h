@@ -5,12 +5,13 @@
 #include <vector>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include "mazefromfileparser.h"
 
 class GraphWidget : public QWidget {
     Q_OBJECT
 public:
     explicit GraphWidget(QWidget *parent = nullptr);
-    void updateGraphFromMaze(const std::vector<std::vector<char>> &maze);
+    void updateGraph( MazeFromFileParser* parser);
 
 public slots:
     void findShortestPath();
@@ -36,6 +37,7 @@ private:
     std::vector<int> shortestPath;
     int startNode = -1;
     int endNode = -1;
+    int startY;
 
 //    void drawPath(QPainter &painter);
     Node* findNodeAt(const QPoint &pos);

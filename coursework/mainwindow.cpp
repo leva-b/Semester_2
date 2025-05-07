@@ -55,7 +55,7 @@ void MainWindow::toggleViews() {
     if (isMazeView) {
         outWidget = mazeWidget;
         inWidget = graphWidget;
-        graphWidget->updateGraphFromMaze(mazeWidget->getMazeData());
+        graphWidget->updateGraph(mazeWidget->getConstParser());
     } else {
         outWidget = graphWidget;
         inWidget = mazeWidget;

@@ -17,9 +17,10 @@ public:
     //Graph& operator=(const Graph& other);
     void addEdge(size_t from, size_t to, int weight);
     void dijkstra();
-
+    size_t getNumberVertices() const;
     /*void initializationStartOrEnd();*/
     std::vector<size_t> getPath() const;
+    const std::vector<std::pair<size_t,int>>& getEdges(size_t index) const;
 
 };
 

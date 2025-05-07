@@ -63,3 +63,12 @@ void Graph::addStartOrEnd(size_t index){
         end_index = index;
     }
 }
+
+size_t Graph::getNumberVertices() const{
+    return graph_.size();
+}
+
+
+const std::vector<std::pair<size_t,int>>& Graph::getEdges(size_t index) const{
+    return graph_[index];
+}

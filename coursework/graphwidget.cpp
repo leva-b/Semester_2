@@ -6,12 +6,13 @@
 #include <QPushButton>
 #include <QInputDialog>
 #include <cmath>
+#include <QTimer>
 
 GraphWidget::GraphWidget(QWidget *parent) : QWidget(parent)
 {
     mainLayout = new QVBoxLayout(this);
 
-    findPathButton = new QPushButton("Find Path", this);
+    findPathButton = new QPushButton("Find a way", this);
     connect(findPathButton, &QPushButton::clicked, this, &GraphWidget::findShortestPath);
     // findPathButton->setStyleSheet("QPushButton {"
     //                               "background-color: #4CAF50;"
@@ -22,10 +23,12 @@ GraphWidget::GraphWidget(QWidget *parent) : QWidget(parent)
     //                               "}");
 
     mainLayout->addWidget(findPathButton);
-    mainLayout->addStretch(); // Растягиваем оставшееся пространство
-
+    mainLayout->addStretch();
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(mainLayout);
-    // Инициализация с более разнесенными вершинами
+
+
+    startY = findPathButton->height() + 10;
     nodes.push_back({QPoint(150, 150), 0});
     nodes.push_back({QPoint(350, 150), 1});
     nodes.push_back({QPoint(250, 300), 2});
@@ -34,32 +37,40 @@ GraphWidget::GraphWidget(QWidget *parent) : QWidget(parent)
     edges.push_back({1, 2, 3});
 }
 
-void GraphWidget::updateGraphFromMaze(const std::vector<std::vector<char>> &maze)
-{
+void GraphWidget::updateGraph(MazeFromFileParser* parser) {
     nodes.clear();
     edges.clear();
 
-    // Увеличиваем расстояние между вершинами при конвертации из лабиринта
-    int nodeId = 0;
-    int spacing = 60; // Увеличенное расстояние между узлами
 
-    for (size_t y = 0; y < maze.size(); ++y) {
-        for (size_t x = 0; x < maze[y].size(); ++x) {
-            if (maze[y][x] == '0') { // Path
-                // Добавляем смещение от краев и увеличиваем расстояние
-                nodes.push_back({QPoint(x * spacing + 100, y * spacing + 100), nodeId++});
-            }
-        }
+
+    Graph graph = parser->buildGraph();
+    //std::vector<std::vector<char>> maze = parser->getMazeConstData();
+    // if (maze.empty()) {
+    //     update();
+    //     return;
+    // }
+
+    std::vector<std::pair<int, int>> verticesPositions = parser->getVerticesPositions();
+    std::vector<std::vector<char>> maze = parser->getMazeConstData();
+    int centerX = maze.size()/2;
+    int centerY = maze[0].size()/2;
+    int nodeId = 0;
+    int spacing = 60;
+
+
+    for (const auto &vertice: verticesPositions) {
+         nodes.push_back({QPoint((vertice.second - centerX) * spacing, (vertice.first - centerY) * spacing ), nodeId++});
+        qDebug() << "x" << (vertice.second - centerX) * spacing << " y" << (vertice.first - centerY) * spacing << "node" << nodeId - 1;
     }
 
-    // Создаем ребра только между достаточно близкими вершинами
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        for (size_t j = i + 1; j < nodes.size(); ++j) {
-            QPoint diff = nodes[i].pos - nodes[j].pos;
-            double distance = sqrt(diff.x() * diff.x() + diff.y() * diff.y());
-            if (distance < spacing * 1.8) { // Увеличенный порог
-                edges.push_back({static_cast<int>(i), static_cast<int>(j), static_cast<int>(distance/10)});
-            }
+    // Шаг 2: Добавляем рёбра из графа (не из лабиринта!)
+    for (size_t from = 0; from < graph.getNumberVertices(); ++from) {
+        for (auto &edge: graph.getEdges(from)) {
+            size_t to = edge.first;
+            if(to <= from)continue;
+            int weight = edge.second;
+            edges.push_back({static_cast<int>(from), static_cast<int>(to), weight});
+
         }
     }
 
@@ -72,8 +83,10 @@ void GraphWidget::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setRenderHint(QPainter::TextAntialiasing, true);
-
     // Рисуем рёбра
+    painter.translate(width() / 2, (height() - startY)/2 + startY);
+
+    qDebug() << QPoint(width() / 2, (height() - startY)/2 + startY);
     painter.setPen(QPen(QColor("#3498db"), 3, Qt::SolidLine, Qt::RoundCap));
     for (const Edge &edge : edges) {
         if (edge.from < (int)nodes.size() && edge.to < (int)nodes.size()) {
@@ -119,6 +132,7 @@ void GraphWidget::paintEvent(QPaintEvent *event)
             }
         }
     }
+    //painter.drawEllipse(-5, -5, 10, 10);
 }
 
 
@@ -159,7 +173,7 @@ void GraphWidget::findShortestPath()
 void GraphWidget::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        QPoint pos = event->pos();
+        QPoint pos = event->pos() - QPoint(width() / 2, (height() - startY)/2 + startY);
 
         if (isAddingEdge) {
             Node *node = findNodeAt(pos);

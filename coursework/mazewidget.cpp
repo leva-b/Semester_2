@@ -9,17 +9,18 @@
 #include <QMessageBox>
 #include <QTimer>
 
-MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent), currentPathIndex(0),pathColor(Qt::red)
+MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent),pathColor(Qt::red)
 {
     std::vector<std::vector<char>> maze = {
-        {'1', '1', '1', '1', '1', '1', '1', '1'},
-        {'0', '0', '0', '0', '0', '0', '0', '1'},
-        {'1', '0', '1', '1', '1', '0', '1', '1'},
-        {'1', '0', '0', '0', '1', '0', '0', '1'},
-        {'1', '1', '1', '0', '1', '1', '0', '1'},
-        {'1', '0', '0', '0', '0', '0', '0', '1'},
-        {'1', '0', '1', '1', '1', '1', '0', '1'},
-        {'1', '0', '1', '1', '1', '1', '1', '1'}
+        {'1', '1', '1', '1', '1', '1', '1', '1', '1'},
+        {'0', '0', '0', '0', '0', '0', '0', '1', '1'},
+        {'1', '0', '1', '1', '1', '0', '1', '1', '1'},
+        {'1', '0', '0', '0', '1', '0', '0', '1', '1'},
+        {'1', '1', '1', '0', '1', '1', '0', '1', '1'},
+        {'1', '0', '0', '0', '0', '0', '0', '1', '1'},
+        {'1', '0', '1', '1', '1', '1', '0', '1', '1'},
+        {'1', '0', '1', '1', '1', '1', '1', '1', '1'},
+        {'1', '0', '1', '1', '1', '1', '1', '1', '1'}
     };
     parser = new MazeFromFileParser(maze, '1', '0');
 
@@ -34,10 +35,8 @@ MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent), currentPathIndex(0),p
     openFileButton = new QPushButton("Open file with maze");
     findPathButton = new QPushButton("Find a way");
 
-    //buttonLayout->addStretch();
     buttonLayout->addWidget(openFileButton);
     buttonLayout->addWidget(findPathButton);
-    //buttonLayout->addStretch();
 
     mainLayout->addLayout(buttonLayout);
 
@@ -45,7 +44,7 @@ MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent), currentPathIndex(0),p
 
     animationTimer = new QTimer(this);
     connect(animationTimer, &QTimer::timeout, this, [this]() {
-        if (currentPathIndex < static_cast<int>(pathCells.size())) {
+        if (currentPathIndex < totalPathCells) {
             currentPathIndex++;
             update();
         } else {
@@ -58,6 +57,9 @@ MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent), currentPathIndex(0),p
 
 void MazeWidget::loadMazeFromFile()
 {
+    pathCells.clear();
+    currentPathIndex = 0;
+    animationTimer->stop();
     QString filePath = QFileDialog::getOpenFileName(this, "Open Text File", "", "Text Files (*.txt)");
 
     if (!filePath.isEmpty() && filePath.endsWith(".txt", Qt::CaseInsensitive)) {
@@ -65,12 +67,6 @@ void MazeWidget::loadMazeFromFile()
             delete parser;
             qDebug() << filePath.toStdString();
             parser = new MazeFromFileParser(filePath.toStdString(), wall_symbol, path_symbol);
-            // for(int i = 0; i < parser->getMazeConstData().size(); i++){
-            //     for(int j = 0; j < parser->getMazeConstData()[i].size(); j++){
-            //         qDebug() << parser->getMazeConstData()[i][j];
-            //     }
-            //     qDebug() << "\n";
-            // }
             update();
         }catch(const std::runtime_error& e){
             QMessageBox::warning(nullptr, "Error", "Cannot open file for reading:");
@@ -96,31 +92,19 @@ void MazeWidget::findWayThroughMaze() {
         if (!path.empty()) {
             const auto& vertices = parser->getVerticesPositions();
 
-            // Заполняем pathCells всеми клетками пути
-            for (size_t i = 0; i < path.size() - 1; ++i) {
-                auto start = vertices[path[i]];
-                auto end = vertices[path[i+1]];
-
-                // Добавляем все клетки между вершинами (горизонтально/вертикально)
-                if (start.first == end.first) { // Горизонтальный путь
-                    int step = start.second < end.second ? 1 : -1;
-                    for (int col = start.second; col != end.second; col += step) {
-                        pathCells.emplace_back(col, start.first);
-                    }
-                }else { // Вертикальный путь
-                    int step = start.first < end.first ? 1 : -1;
-                    for (int row = start.first; row != end.first; row += step) {
-                        pathCells.emplace_back(start.second, row);
-                    }
-                }
+            // Заполняем pathCells только вершинами пути
+            for (size_t i = 0; i < path.size(); ++i) {
+                pathCells.emplace_back(vertices[path[i]].second, vertices[path[i]].first);
             }
-            // Добавляем последнюю клетку
-            pathCells.emplace_back(vertices[path.back()].second,
-                                   vertices[path.back()].first);
 
-            animationTimer->start(1000/pathCells.size()); // Запускаем анимацию (100 мс на шаг)
+            // Вычисляем общее количество клеток для анимации
+            totalPathCells = 0;
+            for (size_t i = 0; i < pathCells.size() - 1; ++i) {
+                totalPathCells += std::max(std::abs(pathCells[i].x() - pathCells[i+1].x()),
+                                           std::abs(pathCells[i].y() - pathCells[i+1].y())) + 1;
+            }
+            animationTimer->start(std::max(1000/totalPathCells,5));
         }
-        update();
     } catch (const char* e) {
         QMessageBox::warning(this, "Error", "Path not found");
     }
@@ -157,6 +141,7 @@ void MazeWidget::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     painter.scale(scaleFactor, scaleFactor);
+
     // Рассчитываем размер ячейки на основе размеров виджета и размера лабиринта
     if (!parser->getMazeData().empty()) {
         int availableHeight = height() - openFileButton->height() - 10;
@@ -166,11 +151,9 @@ void MazeWidget::paintEvent(QPaintEvent *event)
 
 
     int mazeWidth = getMazeConstData()[0].size() * cellSize;
-    //int mazeHeight = getMazeConstData().size() * cellSize;
     int startX = (width() - mazeWidth) / 2;
     int startY = openFileButton->height() + 10;
 
-    //qDebug() << width()  << " " <<  height();    // Draw maze
     for (size_t y = 0; y < getMazeConstData().size(); ++y) {
         for (size_t x = 0; x < getMazeConstData()[y].size(); ++x) {
             QRect cellRect(startX + x * cellSize, y * cellSize + startY, cellSize, cellSize);
@@ -183,16 +166,47 @@ void MazeWidget::paintEvent(QPaintEvent *event)
             painter.drawRect(cellRect);
         }
     }
-    for (int i = 0; i < currentPathIndex && i < static_cast<int>(pathCells.size()); ++i) {
-        int x = pathCells[i].x();
-        int y = pathCells[i].y();
-        QRect cellRect(startX + x * cellSize, startY + y * cellSize, cellSize, cellSize);
 
-        painter.fillRect(cellRect, pathColor);
-        painter.setPen(Qt::black);
-        painter.drawRect(cellRect);
+    if (!pathCells.empty() && currentPathIndex > 0) {
+        drawPath(startX, startY);
     }
+}
 
+
+
+void MazeWidget::drawPath(int startX, int startY){
+    QPainter painter(this);
+    painter.setBrush(pathColor);
+    painter.setPen(Qt::black);
+
+    int cellsDrawn = 0;
+    for (size_t i = 0; i < pathCells.size() - 1; ++i) {
+        const QPoint& start = pathCells[i];
+        const QPoint& end = pathCells[i+1];
+
+        int dx = end.x() - start.x();
+        int dy = end.y() - start.y();
+        int steps = std::max(std::abs(dx), std::abs(dy));
+
+        // Количество клеток в этом сегменте
+        int segmentCells = steps + 1;
+
+        // Сколько нужно отрисовать в этом сегменте
+        int toDraw = std::min(segmentCells, currentPathIndex - cellsDrawn);
+
+        for (int j = 0; j < toDraw; ++j) {
+            double progress = (steps > 0) ? static_cast<double>(j) / steps : 0;
+            int x = start.x() + std::round(dx * progress);
+            int y = start.y() + std::round(dy * progress);
+
+            QRect cellRect(startX + x * cellSize, startY + y * cellSize, cellSize, cellSize);
+            painter.fillRect(cellRect, pathColor);
+            painter.drawRect(cellRect);
+        }
+
+        cellsDrawn += toDraw;
+        if (cellsDrawn >= currentPathIndex) break;
+    }
 }
 
 void MazeWidget::mousePressEvent(QMouseEvent *event)
@@ -200,7 +214,6 @@ void MazeWidget::mousePressEvent(QMouseEvent *event)
     if(parser->getMazeData().empty() || event->button() != Qt::LeftButton)
         return;
 
-    //int availableHeight = height() - openFileButton->height() - 10;
     int mazeWidth = getMazeConstData()[0].size() * cellSize;
     int mazeHeight = getMazeConstData().size() * cellSize;
     int startX = (width() - mazeWidth) / 2;
@@ -226,7 +239,6 @@ void MazeWidget::mouseMoveEvent(QMouseEvent *event)
     if(parser->getMazeData().empty() || !(event->buttons() & Qt::LeftButton))
         return;
 
-    //int availableHeight = height() - openFileButton->height() - 10;
     int mazeWidth = getMazeConstData()[0].size() * cellSize;
     int mazeHeight = getMazeConstData().size() * cellSize;
     int startX = (width() - mazeWidth) / 2;
@@ -281,7 +293,7 @@ void MazeWidget::wheelEvent(QWheelEvent* event)
         } else {
             scaleFactor /= zoomFactor;
         }
-        scaleFactor = qBound(0.1, scaleFactor, 10.0); // Ограничиваем масштаб
+        scaleFactor = qBound(0.1, scaleFactor, 10.0);
         update();
     } else {
         QWidget::wheelEvent(event);
@@ -296,4 +308,8 @@ QSize MazeWidget::sizeHint() const
 
     return QSize(parser->getMazeData()[0].size() * cellSize * scaleFactor,
                  parser->getMazeData().size() * cellSize * scaleFactor + openFileButton->height() + 10);
+}
+
+MazeFromFileParser* MazeWidget::getConstParser(){
+    return parser;
 }
