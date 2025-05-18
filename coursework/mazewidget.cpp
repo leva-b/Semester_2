@@ -9,20 +9,8 @@
 #include <QMessageBox>
 #include <QTimer>
 
-MazeWidget::MazeWidget(QWidget *parent) : QWidget(parent),pathColor(Qt::red)
+MazeWidget::MazeWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(parent), parser(parser), pathColor(Qt::red)
 {
-    std::vector<std::vector<char>> maze = {
-        {'1', '1', '1', '1', '1', '1', '1', '1', '1'},
-        {'0', '0', '0', '0', '0', '0', '0', '1', '1'},
-        {'1', '0', '1', '1', '1', '0', '1', '1', '1'},
-        {'1', '0', '0', '0', '1', '0', '0', '1', '1'},
-        {'1', '1', '1', '0', '1', '1', '0', '1', '1'},
-        {'1', '0', '0', '0', '0', '0', '0', '1', '1'},
-        {'1', '0', '1', '1', '1', '1', '0', '1', '1'},
-        {'1', '0', '1', '1', '1', '1', '1', '1', '1'},
-        {'1', '0', '1', '1', '1', '1', '1', '1', '1'}
-    };
-    parser = new MazeFromFileParser(maze, '1', '0');
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -310,6 +298,3 @@ QSize MazeWidget::sizeHint() const
                  parser->getMazeData().size() * cellSize * scaleFactor + openFileButton->height() + 10);
 }
 
-MazeFromFileParser* MazeWidget::getConstParser(){
-    return parser;
-}

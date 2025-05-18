@@ -12,6 +12,7 @@ private:
     size_t start_index = -1;
     size_t end_index = -1;
 public:
+    Graph(){};
     void addStartOrEnd(size_t index);
     Graph(size_t number_vertices);
     //Graph& operator=(const Graph& other);
@@ -21,6 +22,9 @@ public:
     /*void initializationStartOrEnd();*/
     std::vector<size_t> getPath() const;
     const std::vector<std::pair<size_t,int>>& getEdges(size_t index) const;
+    void setStartEnd(size_t start, size_t end);
+    void removeVertex(size_t vertice);
+    void addVertex();
 
 };
 

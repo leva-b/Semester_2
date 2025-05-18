@@ -10,8 +10,22 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Создаем виджеты
-    mazeWidget = new MazeWidget(this);
-    graphWidget = new GraphWidget(this);
+    std::vector<std::vector<char>> maze = {
+        {'1', '1', '1', '1', '1', '1', '1', '1', '1'},
+        {'0', '0', '0', '0', '0', '0', '0', '1', '1'},
+        {'1', '0', '1', '1', '1', '0', '1', '1', '1'},
+        {'1', '0', '0', '0', '1', '0', '0', '1', '1'},
+        {'1', '1', '1', '0', '1', '1', '0', '1', '1'},
+        {'1', '0', '0', '0', '0', '0', '0', '1', '1'},
+        {'1', '0', '1', '1', '1', '1', '0', '1', '1'},
+        {'1', '0', '1', '1', '1', '1', '1', '1', '1'},
+        {'1', '0', '1', '1', '1', '1', '1', '1', '1'}
+    };
+    parser = new MazeFromFileParser(maze, '1', '0');
+
+    // Создание виджетов с передачей парсера
+    mazeWidget = new MazeWidget(this, parser);
+    graphWidget = new GraphWidget(this, parser);
 
     // Настройка эффектов прозрачности
     QGraphicsOpacityEffect *mazeEffect = new QGraphicsOpacityEffect(mazeWidget);
@@ -30,8 +44,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     // Кнопка переключения
     QPushButton *toggleButton = new QPushButton("Switch View", this);
-    connect(toggleButton, &QPushButton::clicked, this, &MainWindow::toggleViews);
-
     // Основной layout
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(toggleButton);
@@ -40,8 +52,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     QWidget *centralWidget = new QWidget(this);
     centralWidget->setLayout(layout);
     setCentralWidget(centralWidget);
-
     resize(800, 600);
+    connect(toggleButton, &QPushButton::clicked, this, &MainWindow::toggleViews);
+
+
+    connect(graphWidget, &GraphWidget::requestParser,
+            this, &MainWindow::updateGraph);
 }
 
 void MainWindow::toggleViews() {
@@ -55,7 +71,7 @@ void MainWindow::toggleViews() {
     if (isMazeView) {
         outWidget = mazeWidget;
         inWidget = graphWidget;
-        graphWidget->updateGraph(mazeWidget->getConstParser());
+        //graphWidget->updateGraphClicked(mazeWidget->getConstParser());
     } else {
         outWidget = graphWidget;
         inWidget = mazeWidget;
@@ -87,6 +103,31 @@ void MainWindow::toggleViews() {
     // Запускаем анимацию
     animation->start();
     isMazeView = !isMazeView;
+}
+
+void MainWindow::updateGraph() {
+    qDebug() << "updateGraph called";
+    qDebug() << "graphWidget:" << graphWidget;
+    qDebug() << "parser:" << parser;
+    if (!graphWidget) {
+        qDebug() << "graphWidget is null";
+        return;
+    }
+    if (!parser) {
+        qDebug() << "parser is null";
+        return;
+    }
+
+    try {
+        graphWidget->updateGraphFromMaze();
+        qDebug() << "Graph updated successfully";
+    } catch (const std::exception& e) {
+        qDebug() << "Exception in updateGraphFromMaze:" << e.what();
+    }
+    qDebug() << "updateGraph : graph" << graphWidget << parser;
+    if(graphWidget && parser) {
+        graphWidget->updateGraphFromMaze();
+    }
 }
 
 MainWindow::~MainWindow(){

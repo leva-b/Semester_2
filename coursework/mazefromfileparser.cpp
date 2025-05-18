@@ -10,15 +10,16 @@ MazeFromFileParser::MazeFromFileParser(std::string filepath, char wall_symbol, c
 MazeFromFileParser::MazeFromFileParser(std::vector<std::vector<char>> grid, char wall_symbol, char path_symbol):
     MazeParser(wall_symbol, path_symbol), filepath_(), grid_(grid){}
 
-Graph MazeFromFileParser::buildGraph()
-{
+Graph MazeFromFileParser::buildGraph() {
     start_index = -1;
     end_index = -1;
     vertices_positions_.clear();
-    for(size_t row = 0; row < grid_.size(); row++){             //добавление вершин
-        for(size_t column = 0; column < grid_[row].size(); column++){
-            if(isVertex(row, column)){
-                vertices_positions_.emplace_back(row,column);
+
+    // 1. Собираем все вершины
+    for(size_t row = 0; row < grid_.size(); row++) {
+        for(size_t column = 0; column < grid_[row].size(); column++) {
+            if(isVertex(row, column)) {
+                vertices_positions_.emplace_back(row, column);
                 addStartOrEnd(row, column);
             }
         }
@@ -26,23 +27,80 @@ Graph MazeFromFileParser::buildGraph()
 
     Graph cur_graph(vertices_positions_.size());
 
-    for(size_t i = 0; i < vertices_positions_.size(); i++){        //инициализируем граф
-        for(size_t j = i + 1; j < vertices_positions_.size(); j++){
-            if(vertices_positions_[i].first == vertices_positions_[j].first){
-                if(isClearHorizontalPath(vertices_positions_[i], vertices_positions_[j])) {
-                    int weight = abs(vertices_positions_[i].second - vertices_positions_[j].second);
-                    cur_graph.addEdge(i, j, weight);
-                }
-            }
-            // Вертикальные связи
-            else if(vertices_positions_[i].second == vertices_positions_[j].second) {
-                if(isClearVerticalPath(vertices_positions_[i], vertices_positions_[j])) {
-                    int weight = abs(vertices_positions_[i].first - vertices_positions_[j].first);
-                    cur_graph.addEdge(i, j, weight);
-                }
-            }
+    // 2. Создаем отсортированные структуры для быстрого поиска соседей
+    std::vector<std::vector<size_t>> rows(grid_.size());
+    std::vector<std::vector<size_t>> cols(grid_[0].size());
 
+    for(size_t i = 0; i < vertices_positions_.size(); i++) {
+        auto [row, col] = vertices_positions_[i];
+        rows[row].push_back(i);
+        cols[col].push_back(i);
+    }
 
+    // 3. Сортируем для бинарного поиска
+    for(auto& row : rows) {
+        std::sort(row.begin(), row.end(), [this](size_t a, size_t b) {
+            return vertices_positions_[a].second < vertices_positions_[b].second;
+        });
+    }
+    for(auto& col : cols) {
+        std::sort(col.begin(), col.end(), [this](size_t a, size_t b) {
+            return vertices_positions_[a].first < vertices_positions_[b].first;
+        });
+    }
+
+    // 4. Добавляем только соседние ребра
+    for(size_t i = 0; i < vertices_positions_.size(); i++) {
+        auto [row, col] = vertices_positions_[i];
+
+        // Горизонтальные соседи
+        auto& row_vertices = rows[row];
+        auto it = std::lower_bound(row_vertices.begin(), row_vertices.end(), i,
+                                   [this](size_t a, size_t b) {
+                                       return vertices_positions_[a].second < vertices_positions_[b].second;
+                                   });
+
+        // Проверяем правого соседа
+        if(it != row_vertices.end() - 1) {
+            size_t j = *(it + 1);
+            if(isClearHorizontalPath(vertices_positions_[i], vertices_positions_[j])) {
+                int weight = vertices_positions_[j].second - col;
+                cur_graph.addEdge(i, j, weight);
+            }
+        }
+
+        // Проверяем левого соседа
+        if(it != row_vertices.begin()) {
+            size_t j = *(it - 1);
+            if(isClearHorizontalPath(vertices_positions_[j], vertices_positions_[i])) {
+                int weight = col - vertices_positions_[j].second;
+                cur_graph.addEdge(j, i, weight);
+            }
+        }
+
+        // Вертикальные соседи (аналогично)
+        auto& col_vertices = cols[col];
+        it = std::lower_bound(col_vertices.begin(), col_vertices.end(), i,
+                              [this](size_t a, size_t b) {
+                                  return vertices_positions_[a].first < vertices_positions_[b].first;
+                              });
+
+        // Проверяем нижнего соседа
+        if(it != col_vertices.end() - 1) {
+            size_t j = *(it + 1);
+            if(isClearVerticalPath(vertices_positions_[i], vertices_positions_[j])) {
+                int weight = vertices_positions_[j].first - row;
+                cur_graph.addEdge(i, j, weight);
+            }
+        }
+
+        // Проверяем верхнего соседа
+        if(it != col_vertices.begin()) {
+            size_t j = *(it - 1);
+            if(isClearVerticalPath(vertices_positions_[j], vertices_positions_[i])) {
+                int weight = row - vertices_positions_[j].first;
+                cur_graph.addEdge(j, i, weight);
+            }
         }
     }
 
@@ -108,10 +166,10 @@ void MazeFromFileParser::addStartOrEnd(size_t row, size_t column){
         //qDebug()  << (size_t)-1;
         if(start_index == (size_t)-1){
             start_index = vertices_positions_.size() - 1;
-            qDebug() << "start"<<start_index;
+            //qDebug() << "start"<<start_index;
         }else if(end_index == (size_t)-1){
             end_index = vertices_positions_.size() - 1;
-            qDebug() << "end" << end_index;
+            //qDebug() << "end" << end_index;
         }
     }
 }

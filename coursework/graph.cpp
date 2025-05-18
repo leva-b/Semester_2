@@ -10,6 +10,52 @@ void Graph::addEdge(size_t from, size_t to, int weight){
     graph_[to].emplace_back(from, weight);
 }
 
+void Graph::removeVertex(size_t vertice) {
+
+    if (vertice >= number_vertices_) {
+        throw std::out_of_range("Vertex index out of range");
+    }
+
+    for (auto& edges : graph_) {
+        edges.erase(
+            std::remove_if(edges.begin(), edges.end(),
+                           [vertice](const auto& pair) { return pair.first == vertice; }),
+            edges.end()
+            );
+    }
+
+    graph_.erase(graph_.begin() + vertice);
+
+    for (auto& edges : graph_) {
+        for (auto& [to, weight] : edges) {
+            if (to > vertice) {
+                to--;
+            }
+        }
+    }
+
+    for (auto& p : path_) {
+        if ((size_t)p == vertice) {
+            path_.clear();
+            path_.resize(number_vertices_ - 1, -1);
+        }
+    }
+
+    if (start_index == vertice) start_index = -1;
+    else if (start_index > vertice) start_index--;
+
+    if (end_index == vertice) end_index = -1;
+    else if (end_index > vertice) end_index--;
+
+    number_vertices_--;
+}
+
+void Graph::addVertex(){
+    number_vertices_++;
+    graph_.emplace_back();
+    path_.push_back(-1);
+}
+
 void Graph::dijkstra(){
     const size_t size = number_vertices_;
     std::vector<int> distance(number_vertices_, INT_MAX);
@@ -71,4 +117,9 @@ size_t Graph::getNumberVertices() const{
 
 const std::vector<std::pair<size_t,int>>& Graph::getEdges(size_t index) const{
     return graph_[index];
+}
+
+void Graph::setStartEnd(size_t start, size_t end){
+    start_index = start;
+    end_index = end;
 }

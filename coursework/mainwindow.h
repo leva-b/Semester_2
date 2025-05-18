@@ -4,7 +4,7 @@
 #include <QMainWindow>
 // #include "graph.h"
 // #include "graphparser.h"
-// #include "graphfromfileparser.h"
+#include "mazefromfileparser.h"
 #include <QStackedWidget>
 #include <QPropertyAnimation>
 #include <QScrollArea>
@@ -26,8 +26,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    MazeFromFileParser* getParser() const { return parser; }
+
 private slots:
     void toggleViews();
+    void updateGraph();
 
 private:
     Ui::MainWindow *ui;
@@ -38,6 +41,7 @@ private:
     bool isMazeView = true;
     QScrollArea* mazeScrollArea;
     QScrollArea* graphScrollArea;
+    MazeFromFileParser* parser;
 };
 
 #endif // MAINWINDOW_H

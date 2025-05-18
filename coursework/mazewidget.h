@@ -9,7 +9,7 @@
 class MazeWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit MazeWidget(QWidget *parent = nullptr);
+    explicit MazeWidget(QWidget *parent = nullptr, MazeFromFileParser* parser = nullptr);
 
     std::vector<std::vector<char>>& getMazeData() ;
     const std::vector<std::vector<char>>& getMazeConstData() const;
@@ -43,7 +43,7 @@ private:
     QTimer* animationTimer;
     QColor pathColor;
     std::vector<QPoint> pathCells;  // Все клетки пути (x, y)
-    int currentPathIndex = 0;        //
+    int currentPathIndex = 0;
     int totalPathCells = 0;
     void toggleWall(const QPoint &pos);
     bool isCorrectMaze();
