@@ -11,6 +11,7 @@
 
 MazeWidget::MazeWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(parent), parser(parser), pathColor(Qt::red)
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -22,10 +23,11 @@ MazeWidget::MazeWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(pa
 
     openFileButton = new QPushButton("Open file with maze");
     findPathButton = new QPushButton("Find a way");
+    pathDisplayButton = new QPushButton("Display the entire path", this);
 
     buttonLayout->addWidget(openFileButton);
     buttonLayout->addWidget(findPathButton);
-
+    buttonLayout->addWidget(pathDisplayButton);
     mainLayout->addLayout(buttonLayout);
 
     mainLayout->addStretch();
@@ -41,10 +43,19 @@ MazeWidget::MazeWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(pa
     });
     connect(openFileButton, &QPushButton::clicked, this, &MazeWidget::loadMazeFromFile);
     connect(findPathButton, &QPushButton::clicked, this, &MazeWidget::findWayThroughMaze);
+    connect(pathDisplayButton, &QPushButton::clicked, this, &MazeWidget::pathDisplay);
+}
+
+void MazeWidget::pathDisplay(){
+    if(pathCells.empty())
+        findWayThroughMaze();
+    currentPathIndex = totalPathCells;
+    update();
 }
 
 void MazeWidget::loadMazeFromFile()
 {
+
     pathCells.clear();
     currentPathIndex = 0;
     animationTimer->stop();
@@ -52,9 +63,11 @@ void MazeWidget::loadMazeFromFile()
 
     if (!filePath.isEmpty() && filePath.endsWith(".txt", Qt::CaseInsensitive)) {
         try{
-            delete parser;
             qDebug() << filePath.toStdString();
             parser = new MazeFromFileParser(filePath.toStdString(), wall_symbol, path_symbol);
+            emit parserUpdated(parser);
+            scaleFactor = 1;
+            scrollOffset = QPointF(0, 0);
             update();
         }catch(const std::runtime_error& e){
             QMessageBox::warning(nullptr, "Error", "Cannot open file for reading:");
@@ -86,12 +99,8 @@ void MazeWidget::findWayThroughMaze() {
             }
 
             // Вычисляем общее количество клеток для анимации
-            totalPathCells = 0;
-            for (size_t i = 0; i < pathCells.size() - 1; ++i) {
-                totalPathCells += std::max(std::abs(pathCells[i].x() - pathCells[i+1].x()),
-                                           std::abs(pathCells[i].y() - pathCells[i+1].y())) + 1;
-            }
-            animationTimer->start(std::max(1000/totalPathCells,5));
+            totalPathCells = pathCells.size() - 1;
+            animationTimer->start(0);
         }
     } catch (const char* e) {
         QMessageBox::warning(this, "Error", "Path not found");
@@ -128,72 +137,80 @@ void MazeWidget::paintEvent(QPaintEvent *event)
     Q_UNUSED(event);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    painter.scale(scaleFactor, scaleFactor);
 
-    // Рассчитываем размер ячейки на основе размеров виджета и размера лабиринта
+    if (parser->getMazeData().empty()) return;
+
+    // Рассчитываем размеры лабиринта
+    int mazeWidth = getMazeConstData()[0].size() * cellSize;
+    int mazeHeight = getMazeConstData().size() * cellSize;
+
+
+    // Автоматически центрируем, если лабиринт меньше виджета
+    if (mazeWidth * scaleFactor <= width() &&
+        mazeHeight * scaleFactor <= height()) {
+        scrollOffset = QPointF(0, 0);
+    }
+
+    // Применяем трансформации
+    painter.translate(width()/2, height()/2);
+    painter.translate(scrollOffset);
+    painter.scale(scaleFactor, scaleFactor);
     if (!parser->getMazeData().empty()) {
         int availableHeight = height() - openFileButton->height() - 10;
         cellSize = std::min(width() / getMazeConstData()[0].size(),
                             availableHeight / getMazeConstData().size());
     }
 
+    // Начальные координаты (левый верхний угол лабиринта)
+    int startX = -mazeWidth / 2;
+    int startY = -mazeHeight / 2 + (openFileButton->height() - 10) / scaleFactor;
 
-    int mazeWidth = getMazeConstData()[0].size() * cellSize;
-    int startX = (width() - mazeWidth) / 2;
-    int startY = openFileButton->height() + 10;
-
+    // Рисуем лабиринт
     for (size_t y = 0; y < getMazeConstData().size(); ++y) {
         for (size_t x = 0; x < getMazeConstData()[y].size(); ++x) {
-            QRect cellRect(startX + x * cellSize, y * cellSize + startY, cellSize, cellSize);
+            QRect cellRect(startX + x * cellSize, startY + y * cellSize, cellSize, cellSize);
 
             if (getMazeConstData()[y][x] == '1') {
-                painter.fillRect(cellRect, Qt::black); // Стена
+                painter.fillRect(cellRect, Qt::black);
             } else {
-                painter.fillRect(cellRect, Qt::white); // Путь
+                painter.fillRect(cellRect, Qt::white);
             }
             painter.drawRect(cellRect);
         }
     }
 
     if (!pathCells.empty() && currentPathIndex > 0) {
-        drawPath(startX, startY);
+        drawPath(painter, startX, startY);
     }
 }
 
 
-
-void MazeWidget::drawPath(int startX, int startY){
-    QPainter painter(this);
+void MazeWidget::drawPath(QPainter& painter, int startX, int startY) {
+    painter.setRenderHint(QPainter::Antialiasing, false);
     painter.setBrush(pathColor);
     painter.setPen(Qt::black);
 
-    int cellsDrawn = 0;
-    for (size_t i = 0; i < pathCells.size() - 1; ++i) {
+    // Отрисовываем все сегменты до currentPathIndex
+    for (int i = 0; i < currentPathIndex && i < pathCells.size() - 1; ++i) {
         const QPoint& start = pathCells[i];
-        const QPoint& end = pathCells[i+1];
+        const QPoint& end = pathCells[i + 1];
 
+        // Отрисовываем линию между узлами
         int dx = end.x() - start.x();
         int dy = end.y() - start.y();
         int steps = std::max(std::abs(dx), std::abs(dy));
 
-        // Количество клеток в этом сегменте
-        int segmentCells = steps + 1;
-
-        // Сколько нужно отрисовать в этом сегменте
-        int toDraw = std::min(segmentCells, currentPathIndex - cellsDrawn);
-
-        for (int j = 0; j < toDraw; ++j) {
-            double progress = (steps > 0) ? static_cast<double>(j) / steps : 0;
+        for (int j = 0; j <= steps; ++j) {
+            float progress = static_cast<float>(j) / steps;
             int x = start.x() + std::round(dx * progress);
             int y = start.y() + std::round(dy * progress);
 
-            QRect cellRect(startX + x * cellSize, startY + y * cellSize, cellSize, cellSize);
-            painter.fillRect(cellRect, pathColor);
-            painter.drawRect(cellRect);
+            if (x >= 0 && y >= 0 && y < static_cast<int>(getMazeConstData().size()) &&
+                x < static_cast<int>(getMazeConstData()[y].size())) {
+                QRect cellRect(startX + x * cellSize, startY + y * cellSize, cellSize, cellSize);
+                painter.fillRect(cellRect, pathColor);
+            }
         }
-
-        cellsDrawn += toDraw;
-        if (cellsDrawn >= currentPathIndex) break;
     }
 }
 
@@ -202,17 +219,20 @@ void MazeWidget::mousePressEvent(QMouseEvent *event)
     if(parser->getMazeData().empty() || event->button() != Qt::LeftButton)
         return;
 
+    // Преобразуем координаты с учетом трансформаций
+    QPointF scenePos = (event->pos() - QPoint(width()/2, height()/2) - scrollOffset);
+    scenePos /= scaleFactor;
+
     int mazeWidth = getMazeConstData()[0].size() * cellSize;
     int mazeHeight = getMazeConstData().size() * cellSize;
-    int startX = (width() - mazeWidth) / 2;
-    QPoint pos = event->pos();
-    int startY = openFileButton->height() + 10;
 
-    // Проверяем, что клик был в области лабиринта
-    if (pos.y() >= startY && pos.y() < startY + mazeHeight &&
-        pos.x() >= startX && pos.x() < startX + mazeWidth) {
-        int x = (pos.x() - startX) / cellSize;
-        int y = (pos.y() - startY) / cellSize;
+    int startX = -mazeWidth / 2;
+    int startY = -mazeHeight / 2 + (openFileButton->height() - 10) / scaleFactor;
+
+    if (scenePos.y() >= startY && scenePos.y() < startY + mazeHeight &&
+        scenePos.x() >= startX && scenePos.x() < startX + mazeWidth) {
+        int x = (scenePos.x() - startX) / cellSize;
+        int y = (scenePos.y() - startY) / cellSize;
 
         if (x >= 0 && y >= 0 &&
             y < static_cast<int>(getMazeConstData().size()) &&
@@ -227,17 +247,19 @@ void MazeWidget::mouseMoveEvent(QMouseEvent *event)
     if(parser->getMazeData().empty() || !(event->buttons() & Qt::LeftButton))
         return;
 
+    // Аналогичное преобразование координат
+    QPointF scenePos = (event->pos() - QPoint(width()/2, height()/2) - scrollOffset) / scaleFactor;
+
     int mazeWidth = getMazeConstData()[0].size() * cellSize;
     int mazeHeight = getMazeConstData().size() * cellSize;
-    int startX = (width() - mazeWidth) / 2;
-    int startY = openFileButton->height();
 
+    int startX = -mazeWidth / 2;
+    int startY = -mazeHeight / 2 + (openFileButton->height() + 10) / scaleFactor;
 
-    QPoint pos = event->pos();
-    if (pos.y() >= startY && pos.y() < startY + mazeHeight &&
-        pos.x() >= startX && pos.x() < startX + mazeWidth) {
-        int x = (pos.x() - startX) / cellSize;
-        int y = (pos.y() - startY) / cellSize;
+    if (scenePos.y() >= startY && scenePos.y() < startY + mazeHeight &&
+        scenePos.x() >= startX && scenePos.x() < startX + mazeWidth) {
+        int x = (scenePos.x() - startX) / cellSize;
+        int y = (scenePos.y() - startY) / cellSize;
 
         if (x != lastCellPos.x() || y != lastCellPos.y()) {
             lastCellPos = QPoint(x, y);
@@ -248,7 +270,7 @@ void MazeWidget::mouseMoveEvent(QMouseEvent *event)
                 toggleWall(QPoint(x, y));
             }
         }
-    }else{
+    } else {
         lastCellPos = QPoint(-1, -1);
     }
 }
@@ -272,19 +294,131 @@ void MazeWidget::toggleWall(const QPoint &pos)
     }
 }
 
+void MazeWidget::initializedMinMaxScale()
+{
+    if (parser->getMazeData().empty() || cellSize <= 0) {
+        minScale = 0.1;
+        maxScale = 10.0;
+        return;
+    }
+
+    // Размеры виджета
+    qreal widgetWidth = qMax(1.0, static_cast<qreal>(width()));
+    qreal widgetHeight = qMax(1.0, static_cast<qreal>(height() - openFileButton->height() - 10));
+
+    // Размеры лабиринта в пикселях без масштабирования
+    qreal mazeWidth = qMax(1.0, static_cast<qreal>(getMazeConstData()[0].size() * cellSize));
+    qreal mazeHeight = qMax(1.0, static_cast<qreal>(getMazeConstData().size() * cellSize));
+
+    // Минимальный масштаб - чтобы лабиринт не был меньше половины виджета
+    qreal minWidthScale = (widgetWidth / 2.0) / mazeWidth;
+    qreal minHeightScale = (widgetHeight / 2.0) / mazeHeight;
+    qreal calculatedMinScale = qMin(minWidthScale, minHeightScale);
+
+    // Максимальный масштаб - чтобы размер одной ячейки не превышал 100px
+    qreal maxCellScale = 100.0 / static_cast<qreal>(cellSize);
+
+    // Устанавливаем безопасные границы
+    minScale = qMax(0.05, calculatedMinScale);
+    maxScale = qMax(1.0, maxCellScale);
+
+    // Критически важно: убеждаемся что minScale <= maxScale
+    if (minScale > maxScale) {
+        qreal temp = (minScale + maxScale) / 2.0;
+        minScale = temp * 0.8;
+        maxScale = temp * 1.2;
+    }
+
+    // Дополнительная проверка
+    minScale = qMax(0.05, minScale);
+    maxScale = qMax(minScale * 1.1, maxScale);
+}
+
 void MazeWidget::wheelEvent(QWheelEvent* event)
 {
+    if (parser->getMazeData().empty()) return;
+
+    // Рассчитываем размеры лабиринта с учетом масштаба
+    qreal mazeWidth = getMazeConstData()[0].size() * cellSize * scaleFactor;
+    qreal mazeHeight = getMazeConstData().size() * cellSize * scaleFactor;
+
+    // Размеры виджета с учетом кнопок
+    qreal widgetWidth = width();
+    qreal availableHeight = height() - openFileButton->height() - 10; // Доступная высота для лабиринта
+
+    // Добавляем дополнительные отступы для комфортного просмотра
+    const qreal paddingX = 50.0; // Дополнительный отступ по горизонтали
+    const qreal paddingY = 50.0; // Дополнительный отступ по вертикали
+
     if (event->modifiers() & Qt::ControlModifier) {
-        const double zoomFactor = 1.15;
-        if (event->angleDelta().y() > 0) {
+        // Инициализируем масштаб перед использованием
+        initializedMinMaxScale();
+
+        // Масштабирование
+        const double zoomSensitivity = 0.2;
+        const double zoomFactorBase = 1.1;
+
+        double wheelDelta = event->angleDelta().y();
+        double zoomFactor = pow(zoomFactorBase, zoomSensitivity * qAbs(wheelDelta) / 120.0);
+
+        double oldScale = scaleFactor;
+
+        if (wheelDelta > 0) {
             scaleFactor *= zoomFactor;
         } else {
             scaleFactor /= zoomFactor;
         }
-        scaleFactor = qBound(0.1, scaleFactor, 10.0);
+
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся что границы корректны
+        if (minScale > maxScale) {
+            qDebug() << "Warning: minScale > maxScale, fixing...";
+            minScale = 0.1;
+            maxScale = 10.0;
+        }
+
+        // Применяем ограничения масштаба только если границы корректны
+        if (minScale <= maxScale) {
+            scaleFactor = qBound(minScale, scaleFactor, maxScale);
+        } else {
+            // Fallback на безопасные значения
+            scaleFactor = qBound(0.1, scaleFactor, 10.0);
+        }
+
+        // Плавное масштабирование относительно позиции курсора
+        QPointF mousePos = event->position();
+        QPointF centerDelta = mousePos - QPointF(width()/2, height()/2);
+
+        if (oldScale != 0) {  // Защита от деления на ноль
+            scrollOffset = (scrollOffset + centerDelta) * (scaleFactor / oldScale) - centerDelta;
+        }
+
         update();
     } else {
-        QWidget::wheelEvent(event);
+        // Прокрутка - только если лабиринт не помещается
+        if (mazeWidth <= widgetWidth && mazeHeight <= availableHeight) {
+            return;
+        }
+
+        QPoint delta = event->angleDelta();
+        if (!delta.isNull()) {
+            // Рассчитываем допустимые границы скроллинга с учетом отступов
+            qreal maxXOffset = qMax(0.0, (mazeWidth - widgetWidth) / 2.0 + paddingX);
+
+            // Для вертикального скроллинга учитываем высоту кнопок и добавляем отступы
+            qreal buttonOffset = (openFileButton->height() + 10) / 2.0; // Смещение из-за кнопок сверху
+            qreal maxYOffset = qMax(0.0, (mazeHeight - availableHeight) / 2.0 + paddingY + buttonOffset);
+
+            if (event->modifiers() & Qt::ShiftModifier) {
+                // Горизонтальный скроллинг
+                scrollOffset.rx() -= delta.y() * 0.5; // Немного замедляем скорость
+                scrollOffset.rx() = qBound(-maxXOffset, scrollOffset.x(), maxXOffset);
+            } else {
+                // Вертикальный скроллинг
+                scrollOffset.ry() -= delta.y() * 0.5; // Немного замедляем скорость
+                scrollOffset.ry() = qBound(-maxYOffset, scrollOffset.y(), maxYOffset);
+            }
+            update();
+        }
     }
 }
 

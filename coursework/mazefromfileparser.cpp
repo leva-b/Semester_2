@@ -49,6 +49,8 @@ Graph MazeFromFileParser::buildGraph() {
         });
     }
 
+
+    qDebug() << "ok";
     // 4. Добавляем только соседние ребра
     for(size_t i = 0; i < vertices_positions_.size(); i++) {
         auto [row, col] = vertices_positions_[i];
@@ -68,7 +70,6 @@ Graph MazeFromFileParser::buildGraph() {
                 cur_graph.addEdge(i, j, weight);
             }
         }
-
         // Проверяем левого соседа
         if(it != row_vertices.begin()) {
             size_t j = *(it - 1);
@@ -111,8 +112,11 @@ Graph MazeFromFileParser::buildGraph() {
 
 bool MazeFromFileParser::isClearHorizontalPath(const std::pair<int,int>& a, const std::pair<int,int>& b) {
     int row = a.first;
+    if (row < 0 || row >= grid_.size()) return false;
     int col_start = std::min(a.second, b.second);
     int col_end = std::max(a.second, b.second);
+
+    if (col_start < 0 || col_end >= grid_[row].size()) return false;
 
     for(int col = col_start + 1; col < col_end; col++) {
         if(grid_[row][col] != path_symbol_) {
@@ -136,6 +140,10 @@ bool MazeFromFileParser::isClearVerticalPath(const std::pair<int,int>& a, const 
 }
 
 bool MazeFromFileParser::isVertex(int row, int column){
+    if (row < 0 || row >= grid_.size() || column < 0 || column >= grid_[row].size()) {
+        return false;
+    }
+
     if(grid_[row][column] != path_symbol_)return false;
     if(row == 0 || row == grid_.size() - 1){
         return true;
@@ -156,7 +164,16 @@ void MazeFromFileParser::parse()
 
     std::string line;
     while (std::getline(file, line)) {
-        grid_.emplace_back(line.begin(), line.end());
+        grid_.emplace_back();  // Создаем новую пустую строку в grid_
+        auto& last_row = grid_.back();  // Получаем ссылку на последнюю добавленную строку
+
+        // Копируем только нечетные элементы
+        std::copy_if(line.begin(), line.end(), std::back_inserter(last_row),
+                     [](const auto& element) { return element != ' '; });
+    }
+    if(grid_.size() > 1 && grid_[0].size() >= 2){
+        grid_[0][1] = path_symbol_;
+        grid_[grid_.size() - 1][grid_[grid_.size() - 1].size() - 2] = path_symbol_;
     }
 }
 

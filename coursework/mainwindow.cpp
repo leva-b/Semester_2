@@ -4,9 +4,7 @@
 #include <QVBoxLayout>
 #include  <QPushButton>
 #include <ui_mainwindow.h>
-
 #include <QPropertyAnimation>
-#include <QGraphicsOpacityEffect>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Создаем виджеты
@@ -23,24 +21,48 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     };
     parser = new MazeFromFileParser(maze, '1', '0');
 
-    // Создание виджетов с передачей парсера
-    mazeWidget = new MazeWidget(this, parser);
-    graphWidget = new GraphWidget(this, parser);
+    QWidget* mazeContainer = new QWidget(this);
+    QWidget* graphContainer = new QWidget(this);
 
-    // Настройка эффектов прозрачности
-    QGraphicsOpacityEffect *mazeEffect = new QGraphicsOpacityEffect(mazeWidget);
-    mazeWidget->setGraphicsEffect(mazeEffect);
+    // Настраиваем layout для контейнеров
+    QVBoxLayout* mazeContainerLayout = new QVBoxLayout(mazeContainer);
+    QVBoxLayout* graphContainerLayout = new QVBoxLayout(graphContainer);
+    mazeContainerLayout->setContentsMargins(0, 0, 0, 0);
+    graphContainerLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Создаем основные виджеты ОДИН РАЗ
+    mazeWidget = new MazeWidget(mazeContainer, parser);
+    graphWidget = new GraphWidget(graphContainer, parser);
+
+    // Добавляем в контейнеры
+    mazeContainerLayout->addWidget(mazeWidget);
+    graphContainerLayout->addWidget(graphWidget);
+
+    // Создаем scroll areas
+    mazeScroll = new QScrollArea(this);
+    graphScroll = new QScrollArea(this);
+    mazeScroll->setWidget(mazeContainer);
+    graphScroll->setWidget(graphContainer);
+    mazeScroll->setWidgetResizable(true);
+    graphScroll->setWidgetResizable(true);
+
+    // Настройка эффектов прозрачности (применяем к контейнерам)
+    QGraphicsOpacityEffect *mazeEffect = new QGraphicsOpacityEffect(mazeContainer);
     mazeEffect->setOpacity(1.0);
+    mazeContainer->setGraphicsEffect(mazeEffect);
 
-    QGraphicsOpacityEffect *graphEffect = new QGraphicsOpacityEffect(graphWidget);
-    graphWidget->setGraphicsEffect(graphEffect);
-    graphEffect->setOpacity(0.0);
+    QGraphicsOpacityEffect *graphEffect = new QGraphicsOpacityEffect(graphContainer);
+    graphEffect->setOpacity(0.0);  // Начальная прозрачность для graphContainer
+    graphContainer->setGraphicsEffect(graphEffect);
 
+    // Принудительно обновляем виджеты
+    mazeContainer->update();
+    graphContainer->update();
     // Настройка stacked widget
     stackedWidget = new QStackedWidget(this);
-    stackedWidget->addWidget(mazeWidget);
-    stackedWidget->addWidget(graphWidget);
-    stackedWidget->setCurrentWidget(mazeWidget);
+    stackedWidget->addWidget(mazeScroll);
+    stackedWidget->addWidget(graphScroll);
+    stackedWidget->setCurrentWidget(mazeScroll);
 
     // Кнопка переключения
     QPushButton *toggleButton = new QPushButton("Switch View", this);
@@ -55,53 +77,75 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     resize(800, 600);
     connect(toggleButton, &QPushButton::clicked, this, &MainWindow::toggleViews);
 
+    connect(mazeWidget, &MazeWidget::parserUpdated, this, &MainWindow::updateParser);
 
     connect(graphWidget, &GraphWidget::requestParser,
             this, &MainWindow::updateGraph);
 }
 
 void MainWindow::toggleViews() {
-    if (animation && animation->state() == QPropertyAnimation::Running) {
+    if (animationGroup && animationGroup->state() == QAbstractAnimation::Running) {
         return;
     }
 
-    QGraphicsOpacityEffect *outEffect, *inEffect;
-    QWidget *outWidget, *inWidget;
+    // Получаем текущий и следующий контейнеры
+    QWidget* currentContainer = qobject_cast<QScrollArea*>(stackedWidget->currentWidget())->widget();
+    QWidget* nextContainer = qobject_cast<QScrollArea*>(
+                                 isMazeView ? stackedWidget->widget(1) : stackedWidget->widget(0))->widget();
 
-    if (isMazeView) {
-        outWidget = mazeWidget;
-        inWidget = graphWidget;
-        //graphWidget->updateGraphClicked(mazeWidget->getConstParser());
-    } else {
-        outWidget = graphWidget;
-        inWidget = mazeWidget;
+    // Гарантируем наличие эффектов
+    if (!currentContainer->graphicsEffect()) {
+        currentContainer->setGraphicsEffect(new QGraphicsOpacityEffect(currentContainer));
+    }
+    if (!nextContainer->graphicsEffect()) {
+        nextContainer->setGraphicsEffect(new QGraphicsOpacityEffect(nextContainer));
     }
 
-    outEffect = qobject_cast<QGraphicsOpacityEffect*>(outWidget->graphicsEffect());
-    inEffect = qobject_cast<QGraphicsOpacityEffect*>(inWidget->graphicsEffect());
+    // Получаем эффекты
+    QGraphicsOpacityEffect *outEffect = qobject_cast<QGraphicsOpacityEffect*>(currentContainer->graphicsEffect());
+    QGraphicsOpacityEffect *inEffect = qobject_cast<QGraphicsOpacityEffect*>(nextContainer->graphicsEffect());
 
-    // Настройка анимации для текущего виджета (исчезание)
-    animation = new QPropertyAnimation(outEffect, "opacity");
-    animation->setDuration(500);
-    animation->setStartValue(1.0);
-    animation->setEndValue(0.0);
-    animation->setEasingCurve(QEasingCurve::InOutQuad);
+    // Устанавливаем начальные значения
+    outEffect->setOpacity(1.0);
+    inEffect->setOpacity(0.0);
 
-    // Настройка анимации для нового виджета (появление)
-    QPropertyAnimation *inAnimation = new QPropertyAnimation(inEffect, "opacity");
-    inAnimation->setDuration(500);
+    // Создаем группу анимаций
+    animationGroup = new QParallelAnimationGroup(this);
+
+    // Анимация исчезновения текущего виджета
+    QPropertyAnimation *outAnimation = new QPropertyAnimation(outEffect, "opacity", animationGroup);
+    outAnimation->setDuration(1000);
+    outAnimation->setStartValue(1.0);
+    outAnimation->setEndValue(0.0);
+    outAnimation->setEasingCurve(QEasingCurve::InOutQuad);
+
+    // Анимация появления следующего виджета
+    QPropertyAnimation *inAnimation = new QPropertyAnimation(inEffect, "opacity", animationGroup);
+    inAnimation->setDuration(1000);
     inAnimation->setStartValue(0.0);
     inAnimation->setEndValue(1.0);
     inAnimation->setEasingCurve(QEasingCurve::InOutQuad);
 
-    // Связываем анимации
-    connect(animation, &QPropertyAnimation::finished, [this, inWidget, inAnimation]() {
-        stackedWidget->setCurrentWidget(inWidget);
-        inAnimation->start();
+    // Переключаем виджет при старте анимации
+    connect(animationGroup, &QParallelAnimationGroup::stateChanged,
+            [this](QAbstractAnimation::State newState, QAbstractAnimation::State) {
+                if (newState == QAbstractAnimation::Running) {
+                    stackedWidget->setCurrentWidget(isMazeView ? graphScroll : mazeScroll);
+                }
+            });
+
+    // Удаляем группу после завершения
+    connect(animationGroup, &QParallelAnimationGroup::finished, [this]() {
+        animationGroup->deleteLater();
+        animationGroup = nullptr;
     });
 
+    // Добавляем анимации в группу
+    animationGroup->addAnimation(outAnimation);
+    animationGroup->addAnimation(inAnimation);
+
     // Запускаем анимацию
-    animation->start();
+    animationGroup->start();
     isMazeView = !isMazeView;
 }
 
@@ -113,6 +157,7 @@ void MainWindow::updateGraph() {
         qDebug() << "graphWidget is null";
         return;
     }
+
     if (!parser) {
         qDebug() << "parser is null";
         return;
@@ -130,6 +175,22 @@ void MainWindow::updateGraph() {
     }
 }
 
+void MainWindow::updateParser(MazeFromFileParser* newParser) {
+    // Удаляем старый парсер, если он существует
+    if (parser) {
+        delete parser;
+    }
+
+    // Устанавливаем новый парсер
+    parser = newParser;
+
+    graphWidget->setParser(parser);
+}
+
 MainWindow::~MainWindow(){
     delete ui;
+    if (animationGroup) {
+        animationGroup->stop();
+        animationGroup->deleteLater();
+    }
 }
