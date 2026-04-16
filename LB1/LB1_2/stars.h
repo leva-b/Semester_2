@@ -11,8 +11,8 @@ public:
     void draw(QPainter &painter) override;
     double area() const override;
     void scale(double factor, const QPoint& center) override;
-
-
+    Shap* clone() const override { return new Stars(*this); }
+    Stars(const Stars&) = default;
 private:
     int numRays;
     double innerR;

@@ -6,7 +6,7 @@
 Stars::Stars(const QPoint& startPosition, const QPoint& end, int rays, const QColor& color)
     :Polygon(calculateVertices(startPosition, end, rays), color), numRays(rays)
 {
-    position = startPosition;
+    m_position = startPosition;
 }
 
 QVector<QPoint> Stars::calculateVertices(const QPoint& start, const QPoint& end,int rays)
@@ -41,14 +41,14 @@ QVector<QPoint> Stars::calculateVertices(const QPoint& start)
     for (int i = 0; i < numRays; ++i) {
         // Внешняя точка
         double outerAngle = i * angleStep + offset;
-        int outerX = start.x() + outerR*scaleFactor* cos(outerAngle);
-        int outerY = start.y() + outerR*scaleFactor * sin(outerAngle);
+        int outerX = start.x() + outerR*m_scaleFactor* cos(outerAngle);
+        int outerY = start.y() + outerR*m_scaleFactor * sin(outerAngle);
         vertices << QPoint(outerX, outerY);
 
         // Внутренняя точка
         double innerAngle = outerAngle + angleStep / 2;
-        int innerX = start.x() + innerR*scaleFactor * cos(innerAngle);
-        int innerY = start.y() + innerR*scaleFactor * sin(innerAngle);
+        int innerX = start.x() + innerR*m_scaleFactor * cos(innerAngle);
+        int innerY = start.y() + innerR*m_scaleFactor * sin(innerAngle);
         vertices << QPoint(innerX, innerY);
     }
     return vertices;
@@ -57,9 +57,10 @@ QVector<QPoint> Stars::calculateVertices(const QPoint& start)
 void Stars::draw(QPainter& painter){
     QPolygon polygon;
     for(const QPoint& vertice: vertices){
-        polygon << (vertice - position)*scaleFactor + position;
+        polygon << (vertice - m_position)*m_scaleFactor + m_position;
     }
-    painter.setPen(QPen(color,3));
+    painter.setPen(QPen(m_lineColor, m_lineWidth));
+    painter.setBrush(m_fillColor);
     painter.drawPolygon(polygon);
 }
 
@@ -67,23 +68,23 @@ double Stars::area()const{
     double result = 0;
     for(int i = 0; i < vertices.size(); i += 2){
         result += TriangleArea(vertices[i-1<0?vertices.size() - 1:i-1], vertices[i], vertices[i+1]);
-        result += TriangleArea(vertices[i-1<0?vertices.size() - 1:i-1], position, vertices[i+1]);
+        result += TriangleArea(vertices[i-1<0?vertices.size() - 1:i-1], m_position, vertices[i+1]);
     }
-    return result*scaleFactor;
+    return result*m_scaleFactor;
 }
 
 void Stars::scale(double factor, const QPoint& center){
     Q_UNUSED(center);
-    if(scaleFactor * factor > 10)scaleFactor = 10;
-    else if(scaleFactor * factor < 0.1)scaleFactor = 0.1;
-    else scaleFactor *= factor;
+    if(m_scaleFactor * factor > 10)m_scaleFactor = 10;
+    else if(m_scaleFactor * factor < 0.1)m_scaleFactor = 0.1;
+    else m_scaleFactor *= factor;
     // vertices = calculateVertices(center);
 }
 
 QMenu* Stars::createContextMenu(QWidget *parent){
     QMenu* menu = Shap::createContextMenu(parent);
-    menu->addAction("Внутренний радиус", this, &Stars::changeIR);
-    menu->addAction("Внешний радиус", this, &Stars::changeOR);
+    //menu->addAction("Внутренний радиус", this, &Stars::changeIR);
+    //menu->addAction("Внешний радиус", this, &Stars::changeOR);
     return menu;
 }
 
@@ -98,7 +99,7 @@ void Stars::changeIR(){
         else if(abs(newValues[0]) < abs(0.1*innerR)) innerR *= 0.1;
         else innerR = newValues[0];
         outerR = innerR * 2;
-        vertices = calculateVertices(position);
+        vertices = calculateVertices(m_position);
     }
 }
 
@@ -113,6 +114,7 @@ void Stars::changeOR(){
         else if(abs(newValues[0]) < abs(0.1*outerR)) outerR *= 0.1;
         else outerR = newValues[0];
         innerR = outerR/ 2;
-        vertices = calculateVertices(position);
+        vertices = calculateVertices(m_position);
     }
 }
+

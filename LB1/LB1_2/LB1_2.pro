@@ -13,6 +13,8 @@ SOURCES += \
     circle.cpp \
     ellipse.cpp \
     hexagon.cpp \
+    layer.cpp \
+    layermanager.cpp \
     main.cpp \
     mainwindow.cpp \
     parameterdialog.cpp \
@@ -29,6 +31,8 @@ HEADERS += \
     circle.h \
     ellipse.h \
     hexagon.h \
+    layer.h \
+    layermanager.h \
     mainwindow.h \
     parameterdialog.h \
     polygon.h \

@@ -8,6 +8,7 @@
 #include <cmath>
 #include <QTimer>
 #include <QMessageBox>
+#include <QtGlobal>
 
 GraphWidget::GraphWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(parent), parser(parser)
 {
@@ -18,16 +19,22 @@ GraphWidget::GraphWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(
             update();
         } else {
             animationTimer->stop();
+            isAnimating = false;
         }
     });
+
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     mainLayout = new QVBoxLayout(this);
     updateGraph = new QPushButton("Update graph from maze", this);
     deleteGraph = new QPushButton("Delete the graph", this);
-    findPathButton = new QPushButton("Find a way", this);
+    findPathButton = new QPushButton("Find a path", this);
+    pathDisplayButton = new QPushButton("Display the entire path", this);
+
     connect(findPathButton, &QPushButton::clicked, this, &GraphWidget::findShortestPath);
     connect(deleteGraph, &QPushButton::clicked, this, &GraphWidget::deleteAllGraph);
     connect(updateGraph, &QPushButton::clicked, this, &GraphWidget::updateGraphFromMaze);
+    connect(pathDisplayButton, &QPushButton::clicked, this, &GraphWidget::pathDisplay);
     // findPathButton->setStyleSheet("QPushButton {"
     //                               "background-color: #4CAF50;"
     //                               "color: white;"
@@ -39,20 +46,34 @@ GraphWidget::GraphWidget(QWidget *parent, MazeFromFileParser* parser) : QWidget(
     buttonLayout->addWidget(deleteGraph);
     buttonLayout->addWidget(updateGraph);
     buttonLayout->addWidget(findPathButton);
+    buttonLayout->addWidget(pathDisplayButton);
     mainLayout->addLayout(buttonLayout);
     mainLayout->addStretch();
     mainLayout->setContentsMargins(0, 0, 0, 0);
     setLayout(mainLayout);
     startY = updateGraph->height();
+
+    scaleFactor = 1.0;
+    scrollOffset = QPointF(0, 0);
+}
+
+void GraphWidget::pathDisplay(){
+    if(isAnimating){
+        currentAnimationStep = shortestPath.size() * 2 - 1;
+        update();
+    }
 }
 
 void GraphWidget::updateGraphFromMaze() {
+
 
     if (!parser) {
         qDebug() << "Parser is null";
         return;
     }
 
+    scaleFactor = 1.0;
+    scrollOffset = QPointF(0, 0);
     nodes.clear();
     edges.clear();
     shortestPath.clear();
@@ -69,8 +90,8 @@ void GraphWidget::updateGraphFromMaze() {
         return;
     }
     std::vector<std::vector<char>> maze = parser->getMazeConstData();
-    int centerX = maze.size()/2;
-    int centerY = maze[0].size()/2;
+    int centerY = maze.size()/2;
+    int centerX = maze[0].size()/2;
     int nodeId = 0;
     int spacing = 50;
 
@@ -89,6 +110,7 @@ void GraphWidget::updateGraphFromMaze() {
 
         }
     }
+    scaleFactor = 1;
 
     update();
 }
@@ -102,14 +124,12 @@ void GraphWidget::findShortestPath()
         items << QString::number(node.id);
     }
 
-    QString start = QInputDialog::getItem(this, "Select Start Node", "Start Node:", items, 0, false, &ok);
+    int startNode = QInputDialog::getInt(this, "Select Start Node", "Start Node:", 0, 0, nodes.size() - 1, 1, &ok);
     if (!ok) return;
 
-    QString end = QInputDialog::getItem(this, "Select End Node", "End Node:", items, 0, false, &ok);
+    int endNode = QInputDialog::getInt(this, "Select End Node", "End Node:", 0, 0, nodes.size() - 1, 1, &ok);
     if (!ok) return;
 
-    startNode = start.toInt();
-    endNode = end.toInt();
     graph.setStartEnd(startNode, endNode);
 
     try {
@@ -149,99 +169,11 @@ void GraphWidget::findShortestPath()
                 }
             }
         }
-
-        // Запускаем таймер
-        int animationDuration = 1000;
-        int interval = animationDuration / (animatedPath.size() + animatedEdges.size());
-        animationTimer->start(std::max(10, interval));
+        isAnimating = true;
+        animationTimer->start(0);
     }
 
     update();
-}
-
-void GraphWidget::paintEvent(QPaintEvent *event)
-{
-    Q_UNUSED(event);
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setRenderHint(QPainter::TextAntialiasing, true);
-    painter.translate(width() / 2, (height() - startY)/2 + startY);
-
-    // 1. Рисуем все обычные рёбра (тонкие и серые)
-    painter.setPen(QPen(Qt::black, 2));
-    for (const Edge &edge : edges) {
-        if (edge.from < (int)nodes.size() && edge.to < (int)nodes.size()) {
-            QPointF from = nodes[edge.from].pos;
-            QPointF to = nodes[edge.to].pos;
-
-            QLineF line(from, to);
-            shortenLine(line, 20); // Укорачиваем с обоих концов
-
-            painter.drawLine(line);
-
-            // Вес ребра
-            painter.setPen(QPen(Qt::green));
-            painter.drawText((from + to) / 2, QString::number(edge.weight));
-            painter.setPen(QPen(Qt::black, 2));
-        }
-    }
-
-    // 2. Рисуем все узлы (неподсвеченные)
-    QFont nodeFont = painter.font();
-    nodeFont.setPointSize(12);
-    nodeFont.setBold(true);
-    painter.setFont(nodeFont);
-
-    for (const Node &node : nodes) {
-        painter.setPen(QPen(Qt::black, 2));
-        painter.setBrush(QBrush(Qt::gray));
-        painter.drawEllipse(node.pos, 20, 20);
-
-        painter.setPen(QPen(Qt::white));
-        painter.drawText(QRectF(node.pos.x() - 15, node.pos.y() - 10, 30, 20),
-                         Qt::AlignCenter, QString::number(node.id));
-    }
-
-    // 3. Анимация пути (только видимые элементы)
-    if (!shortestPath.empty()) {
-
-        int visibleElements = currentAnimationStep + 1;
-        int visibleNodes = (visibleElements + 1) / 2;
-        int visibleEdges = visibleElements / 2;
-
-
-        // Подсвечиваем узлы
-        painter.setPen(QPen(Qt::black, 2));
-        painter.setBrush(QBrush(pathColor));
-
-        for (size_t i = 0; i < (size_t)visibleNodes && i < shortestPath.size(); i++) {
-            const Node& node = nodes[shortestPath[i]];
-            painter.drawEllipse(node.pos, 20, 20);
-
-            // Текст ID поверх подсветки
-            painter.setPen(QPen(Qt::white));
-            painter.drawText(QRectF(node.pos.x() - 15, node.pos.y() - 10, 30, 20),
-                             Qt::AlignCenter, QString::number(node.id));
-            painter.setPen(QPen(Qt::black, 2));
-        }
-
-        // Подсвечиваем рёбра
-        painter.setPen(QPen(pathColor, 4));
-        for (size_t i = 0; i < (size_t)visibleEdges && i+1 < shortestPath.size(); i++) {
-            int from = shortestPath[i];
-            int to = shortestPath[i+1];
-
-            QLineF line(nodes[from].pos, nodes[to].pos);
-            shortenLine(line, 20); // Укорачиваем с обоих концов
-
-            painter.drawLine(line);
-        }
-    }
-    painter.setPen(QPen(Qt::black, 2));
-    painter.setBrush(Qt::NoBrush);
-    for (const Node &node : nodes) {
-        painter.drawEllipse(node.pos, 20, 20);
-    }
 }
 
 void GraphWidget::shortenLine(QLineF& line, float offset) {
@@ -249,6 +181,371 @@ void GraphWidget::shortenLine(QLineF& line, float offset) {
     line.setPoints(line.p2(), line.p1()); // Разворачиваем линию
     line.setLength(line.length() - offset);
     line.setPoints(line.p2(), line.p1()); // Возвращаем ориентацию
+}
+
+QSize GraphWidget::sizeHint() const
+{
+    if (nodes.empty()) {
+        return QSize(800, 600);
+    }
+
+    // Находим границы графа
+    int minX = 0, maxX = 0, minY = 0, maxY = 0;
+    if (!nodes.empty()) {
+        minX = maxX = nodes[0].pos.x();
+        minY = maxY = nodes[0].pos.y();
+        for (const auto& node : nodes) {
+            minX = qMin(minX, node.pos.x());
+            maxX = qMax(maxX, node.pos.x());
+            minY = qMin(minY, node.pos.y());
+            maxY = qMax(maxY, node.pos.y());
+        }
+    }
+
+    // Добавляем отступы для узлов
+    int padding = baseNodeSize * 2;
+    int graphWidth = (maxX - minX + padding); // Убрано умножение на scaleFactor
+    int graphHeight = (maxY - minY + padding); // Убрано умножение на scaleFactor
+
+    return QSize(graphWidth, graphHeight + startY);
+}
+
+// Добавьте эти методы в класс GraphWidget:
+
+void GraphWidget::initializeMinMaxScale()
+{
+    if (nodes.empty()) {
+        minScale = 0.1;
+        maxScale = 10.0;
+        return;
+    }
+
+    QRectF graphBounds;
+    getGraphBounds(graphBounds);
+
+    qreal graphWidth = qMax(1.0, graphBounds.width());
+    qreal graphHeight = qMax(1.0, graphBounds.height());
+    qreal viewWidth = qMax(1.0, (qreal)width());
+    qreal viewHeight = qMax(1.0, (qreal)(height() - startY));
+
+    // Минимальный масштаб - чтобы весь граф помещался в окно
+    qreal minWidthScale = viewWidth * 0.8 / graphWidth;
+    qreal minHeightScale = viewHeight * 0.8 / graphHeight;
+    minScale = qMax(0.05, qMin(minWidthScale, minHeightScale));
+
+    // Максимальный масштаб - чтобы узлы не становились слишком большими
+    qreal maxNodeScale = 200.0 / qMax(1.0, (qreal)baseNodeSize);
+    maxScale = qMax(minScale * 2.0, qMin(maxNodeScale, 15.0)); // Увеличено с 1.1 до 2.0
+
+    // Дополнительные проверки на случай ошибок округления
+    if (maxScale <= minScale) {
+        qDebug() << "Warning: maxScale <= minScale detected. minScale:" << minScale << "maxScale:" << maxScale;
+        maxScale = minScale * 2.0;
+    }
+
+    // Финальная проверка корректности значений
+    if (minScale <= 0 || maxScale <= 0 || minScale >= maxScale) {
+        qDebug() << "Warning: Invalid scale values detected. Resetting to defaults.";
+        minScale = 0.1;
+        maxScale = 10.0;
+    }
+}
+
+void GraphWidget::wheelEvent(QWheelEvent* event)
+{
+    if (nodes.empty()) {
+        event->ignore();
+        return;
+    }
+
+    if (event->modifiers() & Qt::ControlModifier) {
+        initializeMinMaxScale();
+
+        // Проверяем корректность масштабов перед использованием
+        if (minScale >= maxScale || minScale <= 0 || maxScale <= 0) {
+            minScale = 0.1;
+            maxScale = 10.0;
+        }
+
+        QPointF mousePos = event->position();
+        QPointF graphPosBefore = mousePos - QPointF(width()/2, (height()+startY)/2) - scrollOffset;
+
+        double zoomFactor = pow(1.001, event->angleDelta().y());
+        double newScale = scaleFactor * zoomFactor;
+
+        // Применяем ограничения масштаба
+        newScale = qBound(minScale, newScale, maxScale);
+
+        // Корректируем смещение для сохранения позиции курсора
+        if (scaleFactor > 0.0) {
+            scrollOffset = (scrollOffset + graphPosBefore) * (newScale / scaleFactor) - graphPosBefore;
+        }
+        scaleFactor = newScale;
+
+        limitScrollOffset();
+        update();
+        event->accept();
+    } else {
+        // Обычная прокрутка
+        const qreal scrollSpeed = 0.5;
+        scrollOffset += QPointF(event->angleDelta().x(), event->angleDelta().y()) * scrollSpeed;
+        limitScrollOffset();
+        update();
+        event->accept();
+    }
+}
+
+void GraphWidget::getGraphBounds(QRectF& bounds) const
+{
+    if (nodes.empty()) {
+        bounds = QRectF(0, 0, 0, 0);
+        return;
+    }
+
+    // ИСПРАВЛЕНИЕ: Добавляем проверки для minNodeSize и maxNodeSize
+    int safeMinNodeSize = qMin(minNodeSize, maxNodeSize);
+    int safeMaxNodeSize = qMax(minNodeSize, maxNodeSize);
+
+    // Дополнительная проверка на корректность значений
+    if (safeMinNodeSize <= 0 || safeMaxNodeSize <= 0 || safeMinNodeSize > safeMaxNodeSize) {
+        qDebug() << "Warning: Invalid node sizes. minNodeSize:" << minNodeSize << "maxNodeSize:" << maxNodeSize;
+        safeMinNodeSize = 10;  // Значения по умолчанию
+        safeMaxNodeSize = 50;
+    }
+
+    qreal nodeRadius = qBound(safeMinNodeSize, baseNodeSize, safeMaxNodeSize) / 2.0;
+
+    // Начальные значения с учетом размера узла
+    qreal minX = nodes[0].pos.x() - nodeRadius;
+    qreal maxX = nodes[0].pos.x() + nodeRadius;
+    qreal minY = nodes[0].pos.y() - nodeRadius;
+    qreal maxY = nodes[0].pos.y() + nodeRadius;
+
+    for (const auto& node : nodes) {
+        minX = qMin(minX, node.pos.x() - nodeRadius);
+        maxX = qMax(maxX, node.pos.x() + nodeRadius);
+        minY = qMin(minY, node.pos.y() - nodeRadius);
+        maxY = qMax(maxY, node.pos.y() + nodeRadius);
+    }
+
+    // Добавляем дополнительный отступ
+    const qreal extraPadding = 20.0;
+    bounds = QRectF(minX - extraPadding, minY - extraPadding,
+                    (maxX - minX) + 2 * extraPadding,
+                    (maxY - minY) + 2 * extraPadding);
+}
+
+// Исправленный метод limitScrollOffset
+void GraphWidget::limitScrollOffset()
+{
+    if (nodes.empty()) {
+        scrollOffset = QPointF(0, 0);
+        return;
+    }
+
+    QRectF graphBounds;
+    getGraphBounds(graphBounds);
+
+    qreal scaledGraphWidth = graphBounds.width() * scaleFactor;
+    qreal scaledGraphHeight = graphBounds.height() * scaleFactor;
+    qreal viewWidth = width();
+    qreal viewHeight = height() - startY;
+
+    // Если граф меньше области просмотра - центрируем
+    if (scaledGraphWidth <= viewWidth && scaledGraphHeight <= viewHeight) {
+        scrollOffset = QPointF(0, 0);
+        return;
+    }
+
+    // Максимальные смещения
+    qreal maxXOffset = (scaledGraphWidth - viewWidth) / 2.0;
+    qreal maxYOffset = (scaledGraphHeight - viewHeight) / 2.0;
+
+    const qreal extraScrollMargin = 20.0 * scaleFactor;
+    maxXOffset += extraScrollMargin;
+    maxYOffset += extraScrollMargin;
+
+    // ИСПРАВЛЕНИЕ: Добавляем проверки перед qBound
+    if (maxXOffset < 0) maxXOffset = 0;
+    if (maxYOffset < 0) maxYOffset = 0;
+
+    // Ограничиваем смещения
+    scrollOffset.setX(qBound(-maxXOffset, scrollOffset.x(), maxXOffset));
+    scrollOffset.setY(qBound(-maxYOffset, scrollOffset.y(), maxYOffset));
+}
+
+// Исправленный метод paintEvent
+void GraphWidget::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setRenderHint(QPainter::TextAntialiasing, true);
+
+    // Сохраняем исходное состояние
+    painter.save();
+
+    // Применяем трансформации
+    painter.translate(width() / 2.0, (height() + startY) / 2.0);
+    painter.translate(scrollOffset);
+    painter.scale(scaleFactor, scaleFactor);
+
+    // ИСПРАВЛЕНИЕ: Более надежная проверка размеров узлов
+    int safeMinNodeSize = 5;   // Минимум по умолчанию
+    int safeMaxNodeSize = 100; // Максимум по умолчанию
+
+    // Проверяем, инициализированы ли переменные класса
+    if (minNodeSize > 0 && maxNodeSize > 0 && minNodeSize <= maxNodeSize) {
+        safeMinNodeSize = minNodeSize;
+        safeMaxNodeSize = maxNodeSize;
+    } else {
+        qDebug() << "Warning: Using default node sizes. minNodeSize:" << minNodeSize << "maxNodeSize:" << maxNodeSize;
+    }
+
+    // Проверяем baseNodeSize
+    int safeBaseNodeSize = baseNodeSize;
+    if (safeBaseNodeSize <= 0) {
+        safeBaseNodeSize = 20; // Значение по умолчанию
+    }
+
+    int nodeSize = qBound(safeMinNodeSize, safeBaseNodeSize, safeMaxNodeSize);
+
+    // Рисуем все обычные рёбра
+    painter.setPen(QPen(Qt::black, 2));
+    for (const Edge &edge : edges) {
+        if (edge.from < (int)nodes.size() && edge.to < (int)nodes.size()) {
+            QPointF from = nodes[edge.from].pos;
+            QPointF to = nodes[edge.to].pos;
+
+            QLineF line(from, to);
+            shortenLine(line, nodeSize / 2.0);
+
+            painter.drawLine(line);
+
+            // Вес ребра
+            painter.setPen(QPen(Qt::green, 1));
+            QFont weightFont = painter.font();
+            weightFont.setPixelSize(qMax(8, nodeSize / 3));
+            painter.setFont(weightFont);
+            painter.drawText((from + to) / 2, QString::number(edge.weight));
+            painter.setPen(QPen(Qt::black, 2));
+        }
+    }
+
+    // Рисуем все узлы
+    QFont nodeFont = painter.font();
+    nodeFont.setPixelSize(qMax(8, (int)(nodeSize * 0.6)));
+    painter.setFont(nodeFont);
+
+    for (const Node &node : nodes) {
+        painter.setPen(QPen(Qt::black, 2));
+        painter.setBrush(QBrush(Qt::lightGray));
+        painter.drawEllipse(node.pos, nodeSize, nodeSize);
+
+        painter.setPen(QPen(Qt::black));
+        QRectF textRect(node.pos.x() - nodeSize/2, node.pos.y() - nodeSize/2,
+                        nodeSize, nodeSize);
+        painter.drawText(textRect, Qt::AlignCenter, QString::number(node.id));
+    }
+
+    // Анимация пути
+    if (!shortestPath.empty()) {
+        int visibleElements = currentAnimationStep + 1;
+        int visibleNodes = (visibleElements + 1) / 2;
+        int visibleEdges = visibleElements / 2;
+
+        // Подсвечиваем узлы пути
+        painter.setPen(QPen(Qt::black, 3));
+        painter.setBrush(QBrush(pathColor));
+
+        for (size_t i = 0; i < (size_t)visibleNodes && i < shortestPath.size(); i++) {
+            if (shortestPath[i] < (int)nodes.size()) {
+                const Node& node = nodes[shortestPath[i]];
+                painter.drawEllipse(node.pos, nodeSize, nodeSize);
+
+                painter.setPen(QPen(Qt::white));
+                QRectF textRect(node.pos.x() - nodeSize/2, node.pos.y() - nodeSize/2,
+                                nodeSize, nodeSize);
+                painter.drawText(textRect, Qt::AlignCenter, QString::number(node.id));
+                painter.setPen(QPen(Qt::black, 3));
+            }
+        }
+
+        // Подсвечиваем рёбра пути
+        painter.setPen(QPen(pathColor, 4));
+        for (size_t i = 0; i < (size_t)visibleEdges && i+1 < shortestPath.size(); i++) {
+            int from = shortestPath[i];
+            int to = shortestPath[i+1];
+
+            if (from < (int)nodes.size() && to < (int)nodes.size()) {
+                QLineF line(nodes[from].pos, nodes[to].pos);
+                shortenLine(line, nodeSize / 2.0);
+                painter.drawLine(line);
+            }
+        }
+    }
+
+    painter.restore();
+}
+
+// Исправленные методы findNodeAt
+GraphWidget::Node* GraphWidget::findNodeAt(const QPoint &pos, size_t& curID)
+{
+    QPointF transformedPos(pos.x() / scaleFactor - width() / 2.0 / scaleFactor,
+                           (pos.y() - startY) / scaleFactor - (height() - startY) / 2.0 / scaleFactor);
+
+    // ИСПРАВЛЕНИЕ: Безопасное вычисление размера узла
+    int safeMinNodeSize = 5;
+    int safeMaxNodeSize = 100;
+    int safeBaseNodeSize = 20;
+
+    if (minNodeSize > 0 && maxNodeSize > 0 && minNodeSize <= maxNodeSize) {
+        safeMinNodeSize = minNodeSize;
+        safeMaxNodeSize = maxNodeSize;
+    }
+
+    if (baseNodeSize > 0) {
+        safeBaseNodeSize = baseNodeSize;
+    }
+
+    int nodeSize = qBound(safeMinNodeSize, safeBaseNodeSize, safeMaxNodeSize);
+
+    for (Node &node : nodes) {
+        if (QLineF(transformedPos, node.pos).length() <= nodeSize) {
+            curID = node.id;
+            return &node;
+        }
+    }
+    return nullptr;
+}
+
+GraphWidget::Node* GraphWidget::findNodeAt(const QPoint &pos)
+{
+    QPointF transformedPos(pos.x() / scaleFactor - width() / 2.0 / scaleFactor,
+                           (pos.y() - startY) / scaleFactor - (height() - startY) / 2.0 / scaleFactor);
+
+    // ИСПРАВЛЕНИЕ: Безопасное вычисление размера узла
+    int safeMinNodeSize = 5;
+    int safeMaxNodeSize = 100;
+    int safeBaseNodeSize = 20;
+
+    if (minNodeSize > 0 && maxNodeSize > 0 && minNodeSize <= maxNodeSize) {
+        safeMinNodeSize = minNodeSize;
+        safeMaxNodeSize = maxNodeSize;
+    }
+
+    if (baseNodeSize > 0) {
+        safeBaseNodeSize = baseNodeSize;
+    }
+
+    int nodeSize = qBound(safeMinNodeSize, safeBaseNodeSize, safeMaxNodeSize);
+
+    for (Node &node : nodes) {
+        if (QLineF(transformedPos, node.pos).length() <= nodeSize) {
+            return &node;
+        }
+    }
+    return nullptr;
 }
 
 void GraphWidget::mousePressEvent(QMouseEvent *event)
@@ -319,33 +616,39 @@ void GraphWidget::mousePressEvent(QMouseEvent *event)
     }
 }
 
+void GraphWidget::mouseMoveEvent(QMouseEvent* event) {
+    if (event->buttons() & Qt::LeftButton) {
+        size_t curId;
+        QPoint transformedPos(event->pos().x() / scaleFactor - width() / 2.0 / scaleFactor,
+                               (event->pos().y() - startY) / scaleFactor - (height() - startY) / 2.0 / scaleFactor);
 
-GraphWidget::Node* GraphWidget::findNodeAt(const QPoint &pos, size_t& curID)
-{
-    for (Node &node : nodes) {
-        QPoint diff = node.pos - pos;
-        if (diff.manhattanLength() < 15) { // В радиусе узла
-            curID = node.id;
-            return &node;
+        Node* node = findNodeAt(event->pos(), curId);
+        if (node) {
+            isAddingEdge = false;
+            node->pos = transformedPos;
+            update();
         }
     }
-    return nullptr;
 }
 
-GraphWidget::Node* GraphWidget::findNodeAt(const QPoint &pos)
-{
-    for (Node &node : nodes) {
-        QPoint diff = node.pos - pos;
-        if (diff.manhattanLength() < 15) { // В радиусе узла
-            return &node;
-        }
-    }
-    return nullptr;
+void GraphWidget::setParser(MazeFromFileParser* newParser) {
+
+    animationTimer->stop();
+
+    parser = newParser;
+
+    nodes.clear();
+    edges.clear();
+    shortestPath.clear();
+
+    update();
 }
 
 void GraphWidget::deleteAllGraph(){
     nodes.clear();
     edges.clear();
     shortestPath.clear();
+    scaleFactor = 1.0;
+    scrollOffset = QPointF(0, 0);
     update();
 }

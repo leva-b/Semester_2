@@ -9,6 +9,9 @@
 #include <QPropertyAnimation>
 #include <QScrollArea>
 
+#include <QParallelAnimationGroup>
+#include <QGraphicsOpacityEffect>
+
 class MazeWidget;
 class GraphWidget;
 
@@ -31,7 +34,7 @@ public:
 private slots:
     void toggleViews();
     void updateGraph();
-
+    void updateParser(MazeFromFileParser* newParser);
 private:
     Ui::MainWindow *ui;
     QStackedWidget *stackedWidget;
@@ -39,9 +42,10 @@ private:
     GraphWidget *graphWidget;
     QPropertyAnimation *animation = nullptr;
     bool isMazeView = true;
-    QScrollArea* mazeScrollArea;
-    QScrollArea* graphScrollArea;
+    QScrollArea* mazeScroll;
+    QScrollArea* graphScroll;
     MazeFromFileParser* parser;
+    QParallelAnimationGroup* animationGroup = nullptr;
 };
 
 #endif // MAINWINDOW_H

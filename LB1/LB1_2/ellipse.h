@@ -11,8 +11,11 @@ class Ellipse: public Shap
     void change();
 public:
     void draw(QPainter& painter) override;
-    Ellipse(QPoint& start, QPoint& end, QColor& color);
+    Ellipse(const QPoint& start, const QPoint& end, const QColor& color);
     QMenu* createContextMenu(QWidget *parent) override;
+    QRect boundingRect() const override;
+    Shap* clone() const override { return new Ellipse(*this); }
+    Ellipse(const Ellipse&) = default;
 
 protected:
     double area() const override;

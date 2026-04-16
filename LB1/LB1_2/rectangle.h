@@ -5,15 +5,16 @@
 #include "polygon.h"
 
 class Rectangle : public Polygon {
-    Q_OBJECT
 
 public:
     Rectangle(const QPoint& topLeft, const QPoint& bottomRight, const QColor& color = Qt::blue);
     void draw(QPainter& painter) override;
     void scale(double factor, const QPoint& center) override;
+    Shap* clone() const override;
+
+    Rectangle(const Rectangle&) = default;
 private:
     double area() const override;
-
 
 
 };

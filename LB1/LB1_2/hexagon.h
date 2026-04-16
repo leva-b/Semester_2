@@ -11,12 +11,14 @@ public:
     void draw(QPainter& painter) override;
     double area() const override;
     QMenu* createContextMenu(QWidget *parent)override;
+    Shap* clone() const override { return new Hexagon(*this); }
 private:
     void change();
     int radius;
     QVector<QPoint> calculateVertices(const QPoint& start, const QPoint& end);
     QVector<QPoint> calculateVertices(int R);
     void scale(double factor, const QPoint& center) override;
+    Hexagon(const Hexagon&) = default;
 };
 
 #endif // HEXAGON_H
