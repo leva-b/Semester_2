@@ -17,213 +17,378 @@
 #include "ellipse.h"
 #include "stars.h"
 #include <QMenu>
+#include <QToolBar>
+#include <QActionGroup>
 
 Canvas::Canvas(QWidget *parent)
-    : QWidget(parent), drawing(false), color(Qt::white), selectedShape(nullptr) {
-    shapeComboBox = new QComboBox(this);
-    shapeComboBox->addItem("Прямоугольник");
-    shapeComboBox->addItem("Треугольник");
-    shapeComboBox->addItem("Круг");
-    shapeComboBox->addItem("Шестиугольник");
-    shapeComboBox->addItem("Ромб");
-    shapeComboBox->addItem("Квадрат");
-    shapeComboBox->addItem("Эллипс");
-    shapeComboBox->addItem("Восьмиконечная звезда");
-    shapeComboBox->addItem("Пятиконечная звезда");
-    shapeComboBox->addItem("Шестиконечная звезда");
+    : QWidget(parent)
+    , m_drawing(false)
+    , m_layerManager(new LayerManager(this))
+    , m_currentLineColor(Qt::black)
+    , m_currentFillColor(Qt::transparent)
+    , m_currentLineWidth(2)
+{
+    connect(m_layerManager, &LayerManager::layersChanged, this, &Canvas::onLayersChanged);
 
-    QPushButton *colorButton = new QPushButton("Выбрать цвет", this);
-    connect(colorButton, &QPushButton::clicked, this, &Canvas::chooseColor);
+    // Создание UI
+    m_shapeCombo = new QComboBox(this);
+    m_shapeCombo->addItems({"Rectangle", "Triangle", "Circle", "Ellipse",
+                            "Hexagon", "Rhomb", "Square", "5-star", "6-star", "8-star"});
+    m_shapeCombo->setEnabled(false);
 
-    // Создаем кнопку для очистки холста
-    QPushButton *clearButton = new QPushButton("Очистить", this);
-    connect(clearButton, &QPushButton::clicked, this, &Canvas::clear);
-    shapeComboBox->setStyleSheet("QComboBox {"
-                                 "background-color: #8B00FF;"
-                                 "color: white;"
-                                 "padding: 10px;"
-                                 "border-radius: 5px;"
-                                 "}"
-                                 "QComboBox:hover {"
-                                 "background-color: #9B59B6;"
-                                 "}");
+    connect(m_shapeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int idx) {
+        if(idx >= 0){
+            m_currentShapeType = shapeTypeFromString(m_shapeCombo->currentText());
+        }
+    });
 
-    colorButton->setStyleSheet("QPushButton {"
-                               "background-color: #4CAF50;"
-                               "color: white;"
-                               "border: none;"
-                               "padding: 10px;"
-                               "border-radius: 5px;"
-                               "}"
-                               "QPushButton:hover {"
-                               "background-color: #45a049;"
-                               "}"
-                               "QPushButton:pressed {"
-                               "background-color: #388e3c;"
-                               "}");
+    m_lineWidthSpin = new QSpinBox(this);
+    m_lineWidthSpin->setRange(1, 20);
+    m_lineWidthSpin->setValue(m_currentLineWidth);
+    connect(m_lineWidthSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &Canvas::setLineWidth);
 
-    clearButton->setStyleSheet("QPushButton {"
-                               "background-color: #e81313;"
-                               "color: white;"
-                               "border: none;"
-                               "padding: 10px;"
-                               "border-radius: 5px;"
-                               "}"
-                               "QPushButton:hover {"
-                               "background-color: #e20606;"
-                               "}"
-                               "QPushButton:pressed {"
-                               "background-color: #c00707;"
-                               "}");
-    // CMx = new QLineEdit(this);
-    // CMx->setPlaceholderText("X");
-    // CMx->hide(); // Скрываем по умолчанию
+    m_lineColorBtn = new QPushButton("Line Color", this);
+    connect(m_lineColorBtn, &QPushButton::clicked, this, &Canvas::chooseLineColor);
 
-    // CMy = new QLineEdit(this);
-    // CMy->setPlaceholderText("Y");
-    // CMy->hide(); // Скрываем по умолчанию
+    m_fillColorBtn = new QPushButton("Fill Color", this);
+    connect(m_fillColorBtn, &QPushButton::clicked, this, &Canvas::chooseFillColor);
 
-    // connect(CMx, &QLineEdit::textChanged, this, &Canvas::updateShapePositionFromText);
-    // connect(CMy, &QLineEdit::textChanged, this, &Canvas::updateShapePositionFromText);
+    m_deleteBtn = new QPushButton("Delete", this);
+    connect(m_deleteBtn, &QPushButton::clicked, this, &Canvas::deleteSelectedShapes);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout();
-    buttonLayout->addStretch();
-    buttonLayout->addWidget(colorButton);
-    buttonLayout->addWidget(clearButton);
-    buttonLayout->addWidget(shapeComboBox);
+    QPushButton *copyBtn = new QPushButton("Copy", this);
+    QPushButton *pasteBtn = new QPushButton("Paste", this);
+    connect(copyBtn, &QPushButton::clicked, this, &Canvas::copySelected);
+    connect(pasteBtn, &QPushButton::clicked, this, &Canvas::pasteShapes);
+
+    // Панель инструментов
+    QToolBar *toolBar = new QToolBar(this);
+    QActionGroup *categoryGroup = new QActionGroup(this);
+    QAction *selectAction = toolBar->addAction("Select");
+    selectAction->setCheckable(true);
+    selectAction->setChecked(true);
+    QAction *transfAction = toolBar->addAction("Transform");
+    transfAction->setCheckable(true);
+    QAction *drawAction = toolBar->addAction("Draw");
+    drawAction->setCheckable(true);
+    categoryGroup->addAction(selectAction);
+    categoryGroup->addAction(transfAction);
+    categoryGroup->addAction(drawAction);
+
+    connect(selectAction, &QAction::triggered, [this]() {
+        m_currentCategory = ToolCategory::Selection;
+        m_shapeCombo->setEnabled(false); // отключаем выбор фигур
+    });
+
+    connect(transfAction, &QAction::triggered, [this]() {
+        m_currentCategory = ToolCategory::Transformation;
+        m_shapeCombo->setEnabled(true);
+    });
+
+    connect(drawAction, &QAction::triggered, [this]() {
+        m_currentCategory = ToolCategory::Drawing;
+        m_shapeCombo->setEnabled(true);
+    });
+
+
+    QHBoxLayout *topLayout = new QHBoxLayout;
+    topLayout->addWidget(toolBar);
+    topLayout->addWidget(m_shapeCombo);
+    topLayout->addWidget(new QLabel("Line width:"));
+    topLayout->addWidget(m_lineWidthSpin);
+    topLayout->addWidget(m_lineColorBtn);
+    topLayout->addWidget(m_fillColorBtn);
+    topLayout->addWidget(m_deleteBtn);
+    topLayout->addWidget(copyBtn);
+    topLayout->addWidget(pasteBtn);
+    topLayout->addStretch();
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addLayout(buttonLayout);
-    mainLayout->addStretch();
-
+    mainLayout->addLayout(topLayout);
     setLayout(mainLayout);
+
+    setFocusPolicy(Qt::StrongFocus);
+    setMouseTracking(true);
 }
 
-void Canvas::chooseColor() {
-    QColor newColor = QColorDialog::getColor(color, this, "Выберите цвет");
-    if (newColor.isValid()) {
-        setColor(newColor);
-    }
-}
-
-void Canvas::setColor(const QColor &newColor) {
-    color = newColor;
-}
-
-void Canvas::clear() {
-    selectedShape = nullptr;
-    shapes.clear();
+void Canvas::setLineWidth(int width)
+{
+    m_currentLineWidth = width;
+    for (Shap *s : m_selectedShapes)
+        s->setLineWidth(width);
     update();
 }
 
-void Canvas::mousePressEvent(QMouseEvent *event) {
+void Canvas::setLineColor(const QColor &color)
+{
+    m_currentLineColor = color;
+    for (Shap *s : m_selectedShapes)
+        s->setLineColor(color);
+    update();
+}
+
+void Canvas::setFillColor(const QColor &color)
+{
+    m_currentFillColor = color;
+    for (Shap *s : m_selectedShapes)
+        s->setFillColor(color);
+    update();
+}
+
+void Canvas::chooseLineColor()
+{
+    QColor col = QColorDialog::getColor(Qt::black, this, "Line Color");
+    if (col.isValid()) setLineColor(col);
+}
+
+void Canvas::chooseFillColor()
+{
+    QColor col = QColorDialog::getColor(Qt::transparent, this, "Fill Color");
+    if (col.isValid()) setFillColor(col);
+}
+
+void Canvas::deleteSelectedShapes()
+{
+    for (Shap *s : m_selectedShapes)
+        m_layerManager->removeShape(s);
+    m_selectedShapes.clear();
+    update();
+}
+
+void Canvas::copySelected()
+{
+    m_clipboard.clear();
+    for (Shap *s : m_selectedShapes)
+        m_clipboard.append(s->clone());
+}
+
+void Canvas::pasteShapes()
+{
+    if (m_clipboard.isEmpty()) return;
+    // paste into first layer (or current active layer – here we use layer 0)
+    Layer *targetLayer = m_layerManager->layer(0);
+    if (!targetLayer) return;
+    for (Shap *clone : m_clipboard) {
+        targetLayer->addShape(clone);
+        // offset a bit to avoid overlapping
+        clone->move(QPoint(10, 10));
+    }
+    update();
+}
+
+
+void Canvas::mousePressEvent(QMouseEvent *event)
+{
     if (event->button() == Qt::LeftButton) {
-        for (auto &shape : shapes) {
-            if (shape->contains(event->pos())) {
-                qDebug() << "Shape";
-                if (selectedShape) {
-                    selectedShape->changeSelection();
-                }
-                endPoint = event->pos();
-                selectedShape = shape;
-                shape->changeSelection();
-                update();
-                return;
-            }
+        switch (m_currentCategory) {
+        case ToolCategory::Selection:
+            // Выделение фигур (клик или рамка)
+            handleSelectionPress(event);
+            break;
+        case ToolCategory::Transformation:
+            // Подготовка к трансформации выделенных фигур
+            handleTransformationPress(event);
+            break;
+        case ToolCategory::Drawing:
+            // Начало рисования новой фигуры
+            startDrawing(event->pos());
+            break;
         }
-
-        if (selectedShape) {
-            selectedShape->changeSelection();
-            selectedShape = nullptr;
+    }else if(event->button() == Qt::RightButton){
+        Shap *hit = m_layerManager->shapeAt(event->pos());
+        if(hit){
+            QMenu *menu = hit->createContextMenu(this);
+            QAction *selected = menu->exec(event->globalPos());
+            if(selected) hit->onContextMenuAction(selected->text());
+            delete menu;
             update();
-        }
-        drawing = true;
-        startPoint = event->pos();
-        endPoint = event->pos();
-    }else  if (event->button() == Qt::RightButton) {
-        for (auto &shape : shapes) {
-            if (shape->contains(event->pos())) {
-                QMenu *contextMenu = shape->createContextMenu(this);
-                contextMenu->exec(event->globalPos());
-                delete contextMenu;
-                return;
-            }
         }
     }
+
+    // if (event->button() == Qt::LeftButton) {
+    //     Shap *hit = m_layerManager->shapeAt(event->pos());
+    //     if (hit) {
+    //         if (event->modifiers() & Qt::ControlModifier)
+    //             toggleSelection(hit);
+    //         else
+    //             addToSelection(hit, true);
+    //         m_endPoint = event->pos();  // for dragging
+    //         update();
+    //         return;
+    //     } else {
+    //         clearSelection();
+    //     }
+    //     // start drawing new shape
+    //     m_drawing = true;
+    //     m_startPoint = event->pos();
+    //     m_endPoint = event->pos();
+    // }else if (event->button() == Qt::RightButton) {
+    //     Shap *hit = m_layerManager->shapeAt(event->pos());
+    //     if (hit) {
+    //         QMenu *menu = hit->createContextMenu(this);
+    //         QAction *selected = menu->exec(event->globalPos());
+    //         if (selected) hit->onContextMenuAction(selected->text());
+    //         delete menu;
+    //         update();
+    //         return;
+    //     }
+    // }
 }
 
-void Canvas::mouseMoveEvent(QMouseEvent* event) {
-    if (drawing) {
-        if (!rect().contains(event->pos())) {
-            endPoint = event->pos();
-            QString selectedShape = shapeComboBox->currentText();
-            if (selectedShape == "Прямоугольник") {
-                shapes.append(new Rectangle(startPoint, endPoint, color));
-            } else if (selectedShape == "Треугольник") {
-                shapes.append(new Triangle(startPoint, endPoint, QPoint(startPoint.x() - (endPoint.x() - startPoint.x()), endPoint.y()), color));
-            } else if (selectedShape == "Шестиугольник") {
-                shapes.append(new Hexagon(startPoint, endPoint, color));
-            }
-            drawing = false;
-            update();
-            return;
-        }
-        endPoint = event->pos();
+void Canvas::mouseMoveEvent(QMouseEvent *event)
+{
+
+    if (m_drawing) {
+        m_endPoint = event->pos();
         update();
-    } else if (selectedShape) {
-        if (event->modifiers() & Qt::ControlModifier) {
-            QPoint delta = event->pos() - endPoint;
-            double scaleFactor = 1.0 + (-delta.y()) * 0.01;
-            selectedShape->scale(scaleFactor, selectedShape->center());
+        return;
+    }
+    if(m_rubberBandActive){
+        m_selectionRubberBandRect.setBottomRight(event->pos());
+        update();
+        return;
+    }
+    if(m_currentCategory == ToolCategory::Transformation && m_transforming){
+        QPoint delta = event->pos() - m_endPoint;
+        if(event->modifiers() & Qt::ControlModifier){
+            double factor = 1.0 + delta.y() * 0.01;
+            for(int i = 0; i < m_selectedShapes.size(); ++i){
+                Shap *s = m_selectedShapes[i];
+                s->scale(factor, s->center());
+            }
         }else if(event->modifiers() & Qt::ShiftModifier){
-            double x = event->pos().x() - endPoint.x();
-            double y = event->pos().y() - endPoint.y();
-            double angle = qAtan2(y, x);
-            selectedShape->rotate(angle);
-        } else {
-            QPoint different = event->pos() - endPoint;
-            selectedShape->move(different);
+            double angle = atan2(delta.y(), delta.x());
+            for(Shap *s : m_selectedShapes)
+                s->rotate(angle);
+        }else{
+            moveSelectedBy(delta);
         }
-        endPoint = event->pos();
+        m_endPoint = event->pos();
+        update();
+        return;
+    }
+    if(m_currentCategory == ToolCategory::Selection && !m_selectedShapes.isEmpty()){
+        QPoint delta = event->pos() - m_dragStart;
+        moveSelectedBy(delta);
+        m_dragStart = event->pos();
         update();
     }
 }
 
-void Canvas::mouseReleaseEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton && drawing) {
-        drawing = false;
-        endPoint = event->pos();
-
-        QString selectedShape = shapeComboBox->currentText();
-        Shap* shape = nullptr;
-
-        if (selectedShape == "Прямоугольник") {
-            shape = new Rectangle(startPoint, endPoint, color);
-        }else if (selectedShape == "Треугольник") {
-            shape = new Triangle(startPoint, endPoint, QPoint(startPoint.x() - (endPoint.x() - startPoint.x()),endPoint.y()), color);
-        }else if(selectedShape == "Шестиугольник"){
-            shape = new Hexagon(startPoint, endPoint, color);
-        }else if(selectedShape == "Ромб"){
-            shape = new Rhomb(startPoint, endPoint, color);
-        }else if(selectedShape == "Квадрат"){
-            shape = new Square(startPoint, endPoint, color);
-        }else if (selectedShape == "Круг") {
-            shape = new Circle(startPoint, endPoint, color);
-        }else if (selectedShape == "Эллипс"){
-            shape = new Ellipse(startPoint, endPoint, color);
-        }else if(selectedShape == "Восьмиконечная звезда"){
-            shape = new Stars(startPoint, endPoint, 8, color);
-        }else if(selectedShape == "Пятиконечная звезда"){
-            shape = new Stars(startPoint, endPoint, 5, color);
-        }else if(selectedShape == "Шестиконечная звезда"){
-            shape = new Stars(startPoint, endPoint, 6, color);
+void Canvas::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton){
+        if(m_drawing) {
+            finishDrawing();
+            m_drawing = false;
+            update();
+        }else if (m_rubberBandActive){
+            QRect rect = m_selectionRubberBandRect.normalized();
+            QList<Shap*> shapesInRect = m_layerManager->shapesInRect(rect);
+            if(!(QGuiApplication::keyboardModifiers() & Qt::ControlModifier))
+                clearSelection();
+            for(Shap *s : shapesInRect)
+                addToSelection(s, false);
+            m_rubberBandActive = false;
+            update();
+        }else if(m_transforming){
+            m_transforming = false;
         }
+
+
+
+        m_drawing = false;
+        QString type = m_shapeCombo->currentText();
+        Shap *shape = nullptr;
+        QColor defaultLine = Qt::black, defaultFill = Qt::transparent;
+
+        if (type == "Rectangle")
+            shape = new Rectangle(m_startPoint, m_endPoint, defaultLine);
+        else if (type == "Triangle")
+            shape = new Triangle(m_startPoint, m_endPoint,
+                                 QPoint(m_startPoint.x() - (m_endPoint.x() - m_startPoint.x()), m_endPoint.y()),
+                                 defaultLine);
+        else if (type == "Circle")
+            shape = new Circle(m_startPoint, m_endPoint, defaultLine);
+        else if (type == "Ellipse")
+            shape = new Ellipse(m_startPoint, m_endPoint, defaultLine);
+        else if (type == "Hexagon")
+            shape = new Hexagon(m_startPoint, m_endPoint, defaultLine);
+        else if (type == "Rhomb")
+            shape = new Rhomb(m_startPoint, m_endPoint, defaultLine);
+        else if (type == "Square")
+            shape = new Square(m_startPoint, m_endPoint, defaultLine);
+        else if (type == "5‑star")
+            shape = new Stars(m_startPoint, m_endPoint, 5, defaultLine);
+        else if (type == "6‑star")
+            shape = new Stars(m_startPoint, m_endPoint, 6, defaultLine);
+        else if (type == "8‑star")
+            shape = new Stars(m_startPoint, m_endPoint, 8, defaultLine);
 
         if (shape) {
-            shapes.append(shape);
+            shape->setLineWidth(m_currentLineWidth);
+            shape->setLineColor(m_currentLineColor);
+            shape->setFillColor(m_currentFillColor);
+            m_layerManager->layer(0)->addShape(shape); // add to default layer
+        }
+        update();
+    }
+}
+
+void Canvas::handleSelectionPress(QMouseEvent *event)
+{
+    QPoint pos = event->pos();
+    Shap *hit = m_layerManager->shapeAt(pos);
+
+    if(hit){
+        if(event->modifiers() & Qt::ControlModifier){
+            toggleSelection(hit);
+        }else{
+            addToSelection(hit, true);
         }
 
-        update();
+        m_dragStart = pos;
+        m_selectedShapesStartPos.clear();
+        for(Shap *s : m_selectedShapes)
+            m_selectedShapesStartPos.append(s->center());
+    }else{
+        if(!(event->modifiers() & Qt::ControlModifier))
+            clearSelection();
+        m_rubberBandActive = true;
+        m_selectionRubberBandRect = QRect(pos, pos);
+    }
+}
+
+void Canvas::handleTransformationPress(QMouseEvent *event){
+    if (m_selectedShapes.isEmpty())
+        return;
+    m_transforming = true;
+    m_transformStartPoint = event->pos();
+
+    m_selectedShapesStartScale.clear();
+    m_selectedShapesStartRot.clear();
+    for(Shap *s : m_selectedShapes){
+        m_selectedShapesStartScale.append(s->scaleFactor());
+        m_selectedShapesStartRot.append(s->rotation());
+    }
+    update();
+}
+
+void Canvas::startDrawing(const QPoint &pos){
+    m_drawing = true;
+    m_startPoint = pos;
+    m_endPoint = pos;
+    update();
+}
+
+void Canvas::finishDrawing(){
+    Shap *shape = createShape(m_currentShapeType, m_startPoint, m_endPoint);
+    if(shape){
+        shape->setLineWidth(m_currentLineWidth);
+        shape->setLineColor(m_currentLineColor);
+        shape->setFillColor(m_currentFillColor);
+        m_layerManager->layer(0)->addShape(shape);
     }
 }
 
@@ -233,58 +398,206 @@ void Canvas::paintEvent(QPaintEvent* event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-
-    for (const auto& shape : shapes) {
-        shape->drawShape(painter);
-    }
-    int rectHeight = 50;
-    QRect bottomRect(0, height() - rectHeight, width(), rectHeight);
-    painter.setPen(QPen(QColor(31, 30, 30),0));
-    painter.drawRect(bottomRect);
-
-    if (selectedShape) {
-        QPoint center = selectedShape->center();
-        painter.setBrush(Qt::green);
-        painter.setPen(Qt::black);
-        painter.drawEllipse(center, 4, 4);
-
-        selectedShape->showInformation(painter, height());
-    }
-
-    // рисуем текущую фигуру(процесс рисования)
-    if (drawing) {
-        QString selectedShape = shapeComboBox->currentText();
-        if (selectedShape == "Прямоугольник") {
-            Rectangle tempRect(startPoint, endPoint, color);
-            tempRect.drawShape(painter);
-        }else if (selectedShape == "Треугольник") {
-            Triangle tempTriangle(startPoint, endPoint, QPoint(startPoint.x() + startPoint.x() - endPoint.x(),endPoint.y()), color);
-            tempTriangle.drawShape(painter);
-        }else if(selectedShape == "Шестиугольник"){
-            Hexagon tempHexagon(startPoint, endPoint, color);
-            tempHexagon.drawShape(painter);
-        }else if(selectedShape == "Ромб"){
-            Rhomb tempRhomb(startPoint, endPoint, color);
-            tempRhomb.drawShape(painter);
-        }else if(selectedShape == "Квадрат"){
-            Square tempSquare(startPoint, endPoint, color);
-            tempSquare.drawShape(painter);
-        }else if (selectedShape == "Круг") {
-            Circle tempCircle(startPoint, endPoint, color);
-            tempCircle.drawShape(painter);
-        }else if (selectedShape == "Эллипс") {
-            Ellipse tempEllipse(startPoint, endPoint, color);
-            tempEllipse.drawShape(painter);
-        }else if(selectedShape == "Восьмиконечная звезда"){
-            Stars tempEightPStar(startPoint, endPoint, 8, color);
-            tempEightPStar.drawShape(painter);
-        }else if(selectedShape == "Пятиконечная звезда"){
-            Stars tempEightPStar(startPoint, endPoint, 5, color);
-            tempEightPStar.drawShape(painter);
-        }else if(selectedShape == "Шестиконечная звезда"){
-            Stars tempSixPStar(startPoint, endPoint, 6, color);
-            tempSixPStar.drawShape(painter);
+    for (Layer *layer : m_layerManager->layers()) {
+        for (Shap *shape : layer->shapes()) {
+            shape->drawShape(painter);
+            if (shape->isSelected()) {
+                QRect rect = shape->boundingRect();
+                painter.save();
+                painter.setPen(QPen(Qt::blue, 2, Qt::DashLine));
+                painter.setBrush(Qt::NoBrush);
+                painter.drawRect(rect);
+                painter.restore();
+            }
         }
+    }
+
+    if (m_drawing) {
+        Shap *temp = createShape(m_currentShapeType, m_startPoint, m_endPoint);
+        if(temp){
+            temp->setLineWidth(m_currentLineWidth);
+            temp->setLineColor(m_currentLineColor);
+            temp->setFillColor(m_currentFillColor);
+            temp->drawShape(painter);
+            delete temp;
+        }
+        // QString type = m_shapeCombo->currentText();
+        // if (type == "Rectangle") {
+        //     Rectangle temp(m_startPoint, m_endPoint, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "Triangle") {
+        //     Triangle temp(m_startPoint, m_endPoint,
+        //                   QPoint(m_startPoint.x() - (m_endPoint.x() - m_startPoint.x()), m_endPoint.y()),
+        //                   m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "Circle") {
+        //     Circle temp(m_startPoint, m_endPoint, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "Ellipse") {
+        //     Ellipse temp(m_startPoint, m_endPoint, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "Hexagon") {
+        //     Hexagon temp(m_startPoint, m_endPoint, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "Rhomb") {
+        //     Rhomb temp(m_startPoint, m_endPoint, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "Square") {
+        //     Square temp(m_startPoint, m_endPoint, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "5-star") {
+        //     Stars temp(m_startPoint, m_endPoint, 5, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "6-star") {
+        //     Stars temp(m_startPoint, m_endPoint, 6, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // } else if (type == "8-star") {
+        //     Stars temp(m_startPoint, m_endPoint, 8, m_currentLineColor);
+        //     temp.setLineWidth(m_currentLineWidth);
+        //     temp.setFillColor(m_currentFillColor);
+        //     temp.draw(painter);
+        // }
+    }
+    if(m_rubberBandActive){
+        painter.save();
+        painter.setPen(QPen(Qt::gray, 1, Qt::DashLine));
+        painter.setBrush(QBrush(QColor(128, 128, 255, 64)));
+        painter.drawRect(m_selectionRubberBandRect.normalized());
+        painter.restore();
+    }
+    if (!m_selectedShapes.isEmpty()) {
+        m_selectedShapes.first()->showInformation(painter, height());
     }
 }
 
+void Canvas::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete) {
+        deleteSelectedShapes();
+        return;
+    }
+    int step = 1;
+    QPoint delta;
+    switch (event->key()) {
+    case Qt::Key_Left:  delta = QPoint(-step, 0); break;
+    case Qt::Key_Right: delta = QPoint( step, 0); break;
+    case Qt::Key_Up:    delta = QPoint(0, -step); break;
+    case Qt::Key_Down:  delta = QPoint(0,  step); break;
+    default: QWidget::keyPressEvent(event); return;
+    }
+    moveSelectedBy(delta);
+    update();
+}
+
+void Canvas::clearSelection()
+{
+    for (Shap *s : m_selectedShapes)
+        s->setSelected(false);
+    m_selectedShapes.clear();
+    update();
+}
+
+void Canvas::addToSelection(Shap *shape, bool clearOthers)
+{
+    if (clearOthers) clearSelection();
+    if (shape && !m_selectedShapes.contains(shape)) {
+        shape->setSelected(true);
+        m_selectedShapes.append(shape);
+    }
+    update();
+}
+
+void Canvas::toggleSelection(Shap *shape)
+{
+    if (m_selectedShapes.contains(shape)) {
+        shape->setSelected(false);
+        m_selectedShapes.removeAll(shape);
+    } else {
+        shape->setSelected(true);
+        m_selectedShapes.append(shape);
+    }
+    update();
+}
+
+void Canvas::moveSelectedBy(const QPoint &delta)
+{
+    for (Shap *s : m_selectedShapes)
+        s->move(delta);
+}
+
+void Canvas::rotateSelected(double angleDelta)
+{
+    for (Shap *s : m_selectedShapes)
+        s->rotate(angleDelta);
+}
+
+void Canvas::scaleSelected(double factor)
+{
+    for (Shap *s : m_selectedShapes)
+        s->scale(factor, s->center());
+}
+
+void Canvas::onLayersChanged()
+{
+    update();
+}
+
+ShapeType Canvas::shapeTypeFromString(const QString &type) const
+{
+    if(type == "Rectangle") return ShapeType::Rectangle;
+    if(type == "Triangle") return ShapeType::Triangle;
+    if (type == "Circle") return ShapeType::Circle;
+    if (type == "Ellipse") return ShapeType::Ellipse;
+    if (type == "Hexagon") return ShapeType::Hexagon;
+    if (type == "Rhomb") return ShapeType::Rhomb;
+    if (type == "Square") return ShapeType::Square;
+    if (type == "5-star") return ShapeType::Star5;
+    if (type == "6-star") return ShapeType::Star6;
+    if (type == "8-star") return ShapeType::Star8;
+    return ShapeType::Rectangle;
+}
+
+Shap* Canvas::createShape(ShapeType type, const QPoint &start, const QPoint &end){
+    switch(type){
+    case ShapeType::Rectangle:
+        return new Rectangle(start, end, m_currentLineColor);
+    case ShapeType::Triangle:
+        return new Triangle(start, end, QPoint(start.x() - (end.x() - start.x()), end.y()), m_currentLineColor);
+    case ShapeType::Circle:
+        return new Circle(start, end, m_currentLineColor);
+    case ShapeType::Ellipse:
+        return new Ellipse(start, end, m_currentLineColor);
+    case ShapeType::Hexagon:
+        return new Hexagon(start, end, m_currentLineColor);
+    case ShapeType::Rhomb:
+        return new Rhomb(start, end, m_currentLineColor);
+    case ShapeType::Square:
+        return new Square(start, end, m_currentLineColor);
+    case ShapeType::Star5:
+        return new Stars(start, end, 5, m_currentLineColor);
+    case ShapeType::Star6:
+        return new Stars(start, end, 6, m_currentLineColor);
+    case ShapeType::Star8:
+        return new Stars(start, end, 8, m_currentLineColor);
+    default:
+        return nullptr;
+    }
+}

@@ -8,6 +8,8 @@ public:
     Rhomb(const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
     void draw(QPainter& painter) override;
     QMenu* createContextMenu(QWidget *parent)override;
+    Shap* clone() const override { return new Rhomb(*this); }
+    Rhomb(const Rhomb&) = default;
 private:
     double area() const override;
     void change();

@@ -8,11 +8,8 @@
 #include <QMenu>
 #include <parameterdialog.h>
 
-class Shap: public QWidget
+class Shap
 {
-    Q_OBJECT
-
-
     QLineEdit* CMx = nullptr;
     QLineEdit* CMy = nullptr;
     void changeScale();
@@ -23,17 +20,20 @@ protected:
     bool selectedShape = false;
     Shap(const QPoint& center);
     Shap() = default;
-    Shap(const QColor& color) {
-        this->color = color;
-    }
-
     static double pi;
 
-    QColor color;
+    QColor m_lineColor;
+    QColor m_fillColor;
+    int m_lineWidth = 2;          // default
+    bool m_selected = false;
+    QPoint m_position;
+    double m_rotation = 0.0;
+    double m_scaleFactor = 1.0;
+
+    QPoint m_startPoint;  // used during creation
+    QPoint m_endPoint;
+
     QColor originalColor;
-    QPoint position;
-    double rotation = 0;
-    double scaleFactor = 1;
 
     QPoint startPoint;
     QPoint endPoint;
@@ -43,15 +43,38 @@ protected:
 
 
 public:
-    virtual QMenu* createContextMenu(QWidget *parent);
+    Shap(const Shap&) = default;
+    Shap& operator=(const Shap&) = default;
+    explicit Shap(const QColor &color){
+        m_lineColor = color;
+    }
+    virtual ~Shap() = default;
 
+    virtual QRect boundingRect() const = 0;
+    virtual Shap* clone() const = 0;
+    virtual QMenu* createContextMenu(QWidget *parent);
+    virtual bool onContextMenuAction(const QString& action);
     virtual void rotate(double angle) = 0;
     virtual void scale(double factor, const QPoint& center) = 0;
+
+    int lineWidth() const { return m_lineWidth; }
+    void setLineWidth(int width) { m_lineWidth = width; }
+    QColor lineColor() const { return m_lineColor; }
+    void setLineColor(const QColor &color) { m_lineColor = color; }
+    QColor fillColor() const { return m_fillColor; }
+    void setFillColor(const QColor &color) { m_fillColor = color; }
+
+    bool isSelected() const { return m_selected; }
+    void setSelected(bool sel) { m_selected = sel; }
+    double scaleFactor() const { return m_scaleFactor; }
+    double rotation() const { return m_rotation; }
+
+
     void updatePositionFromText();
 
-    void setParameter(double param) {rotation = param;}
-
-    void updatePosition(const QPoint& newPosition) {position = newPosition;     update();}
+    void setParameter(double param) {m_rotation = param;}
+    void setScaleFactor(double scaleFactor){m_scaleFactor = scaleFactor;}
+    void updatePosition(const QPoint& newPosition) {m_position = newPosition;}
 
     void showInformation(QPainter& painter, int height);
     //virtual void showMoreInformation() override = 0;
@@ -60,10 +83,10 @@ public:
     void changeSelection();
 
     QColor getColor() const{
-        return color;
+        return m_lineColor;
     }
     void setColor(const QColor& color){
-        this->color = color;
+        this->m_lineColor = color;
     }
     void setOriginalColor(const QColor &originalColor) {
         this->originalColor = originalColor;
@@ -74,7 +97,7 @@ public:
     }
 
     virtual QPoint center() const{
-        return position;
+        return m_position;
     }
     virtual bool contains(const QPoint &point) const = 0;
 

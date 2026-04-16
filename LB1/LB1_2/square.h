@@ -11,8 +11,9 @@ class Square: public Rhomb
     void calculateVertices();
 public:
     QMenu* createContextMenu(QWidget *parent)override;
-    Square(QPoint& start, QPoint& end, QColor& color);
+    Square(const QPoint& start, const QPoint& end, const QColor& color);
     void calculateVertices(const QPoint& start, const QPoint& end);
+    Square(const Square&) = default;
 };
 
 #endif // SQUARE_H

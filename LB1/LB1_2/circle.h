@@ -9,12 +9,15 @@ class Circle: public Shap
 public:
     QMenu* createContextMenu(QWidget *parent) override;
     void draw(QPainter& painter) override;
-    Circle(QPoint& start, QPoint& end, QColor& color);
+    Circle(const QPoint& start, const QPoint& end, const QColor& color);
     double area() const override;
     double perimeter() const override;
     void move(const QPoint& offset) override;
-    void rotate(double angle) override { rotation += angle;}
+    void rotate(double angle) override { m_rotation += angle;}
     void scale(double factor, const QPoint& center) override;
+    QRect boundingRect() const override;
+    Shap* clone() const override { return new Circle(*this); }
+    Circle(const Circle&) = default;
 };
 
 #endif // CIRCLE_H

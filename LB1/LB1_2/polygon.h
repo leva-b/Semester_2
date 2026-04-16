@@ -4,11 +4,10 @@
 
 class Polygon: public Shap
 {
-    Q_OBJECT
-
     bool contains(const QPoint &point) const override;
 public:
     Polygon(const QVector<QPoint>& vertices, const QColor& color = Qt::blue);
+    QRect boundingRect() const override;
 protected:
     QVector<QPoint> vertices;
     void move(const QPoint& offset) override;

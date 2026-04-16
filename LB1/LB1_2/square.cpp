@@ -2,10 +2,10 @@
 #include <QPoint>
 #include <QColor>
 
-Square::Square(QPoint& start, QPoint& end, QColor& color):
+Square::Square(const QPoint& start, const QPoint& end, const QColor& color):
     Rhomb(start, end, color){
     calculateVertices(start, end);
-    position = start;
+    m_position = start;
 }
 
 void Square::calculateVertices(const QPoint& start, const QPoint& end) {
@@ -25,8 +25,8 @@ void Square::calculateVertices(const QPoint& start, const QPoint& end) {
 void Square::calculateVertices() {
     vertices.clear();
 
-    int centerX = position.x();
-    int centerY = position.y();
+    int centerX = m_position.x();
+    int centerY = m_position.y();
 
     vertices.push_back(QPoint(centerX - sideLength, centerY - sideLength));
     vertices.push_back(QPoint(centerX + sideLength, centerY - sideLength));
@@ -36,7 +36,7 @@ void Square::calculateVertices() {
 
 QMenu* Square::createContextMenu(QWidget *parent){
     QMenu* menu = Shap::createContextMenu(parent);
-    menu->addAction("Длина стороны", this, &Square::change);
+    //menu->addAction("Длина стороны", this, &Square::change);
     return menu;
 }
 
