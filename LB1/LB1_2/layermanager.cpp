@@ -5,8 +5,12 @@
 
 LayerManager::LayerManager(QObject *parent) : QObject(parent)
 {
-    // default layer
-    addLayer("Default");
+    addLayer();
+}
+
+QString LayerManager::generateLayerName() const
+{
+    return QString("Layer %1").arg(m_layers.size() + 1);
 }
 
 LayerManager::~LayerManager()
@@ -14,9 +18,9 @@ LayerManager::~LayerManager()
     qDeleteAll(m_layers);
 }
 
-void LayerManager::addLayer(const QString &name)
+void LayerManager::addLayer()
 {
-    m_layers.append(new Layer(name));
+    m_layers.append(new Layer(generateLayerName()));
     emit layersChanged();
 }
 
@@ -28,6 +32,7 @@ void LayerManager::removeLayer(int index)
     if (!m_layers.isEmpty()) {
         for (Shap *shape : l->shapes())
             m_layers.first()->addShape(shape);
+        l->takeShapes();
     }
     delete l;
     emit layersChanged();

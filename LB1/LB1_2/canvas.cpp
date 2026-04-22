@@ -106,6 +106,7 @@ Canvas::Canvas(QWidget *parent)
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addLayout(topLayout);
+    mainLayout->addStretch();
     setLayout(mainLayout);
 
     setFocusPolicy(Qt::StrongFocus);
@@ -166,12 +167,13 @@ void Canvas::copySelected()
 void Canvas::pasteShapes()
 {
     if (m_clipboard.isEmpty()) return;
-    // paste into first layer (or current active layer – here we use layer 0)
-    Layer *targetLayer = m_layerManager->layer(0);
+    Layer *targetLayer = m_layerManager->layer(m_activeLayerIndex);
     if (!targetLayer) return;
-    for (Shap *clone : m_clipboard) {
-        targetLayer->addShape(clone);
-        // offset a bit to avoid overlapping
+    for (Shap *original : m_clipboard) {
+        Shap* clone = original->clone();
+
+        if(targetLayer)
+            targetLayer->addShape(clone);
         clone->move(QPoint(10, 10));
     }
     update();
@@ -183,15 +185,12 @@ void Canvas::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         switch (m_currentCategory) {
         case ToolCategory::Selection:
-            // Выделение фигур (клик или рамка)
             handleSelectionPress(event);
             break;
         case ToolCategory::Transformation:
-            // Подготовка к трансформации выделенных фигур
             handleTransformationPress(event);
             break;
         case ToolCategory::Drawing:
-            // Начало рисования новой фигуры
             startDrawing(event->pos());
             break;
         }
@@ -205,35 +204,6 @@ void Canvas::mousePressEvent(QMouseEvent *event)
             update();
         }
     }
-
-    // if (event->button() == Qt::LeftButton) {
-    //     Shap *hit = m_layerManager->shapeAt(event->pos());
-    //     if (hit) {
-    //         if (event->modifiers() & Qt::ControlModifier)
-    //             toggleSelection(hit);
-    //         else
-    //             addToSelection(hit, true);
-    //         m_endPoint = event->pos();  // for dragging
-    //         update();
-    //         return;
-    //     } else {
-    //         clearSelection();
-    //     }
-    //     // start drawing new shape
-    //     m_drawing = true;
-    //     m_startPoint = event->pos();
-    //     m_endPoint = event->pos();
-    // }else if (event->button() == Qt::RightButton) {
-    //     Shap *hit = m_layerManager->shapeAt(event->pos());
-    //     if (hit) {
-    //         QMenu *menu = hit->createContextMenu(this);
-    //         QAction *selected = menu->exec(event->globalPos());
-    //         if (selected) hit->onContextMenuAction(selected->text());
-    //         delete menu;
-    //         update();
-    //         return;
-    //     }
-    // }
 }
 
 void Canvas::mouseMoveEvent(QMouseEvent *event)
@@ -250,7 +220,7 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
         return;
     }
     if(m_currentCategory == ToolCategory::Transformation && m_transforming){
-        QPoint delta = event->pos() - m_endPoint;
+        QPoint delta = event->pos() - m_transformStartPoint;
         if(event->modifiers() & Qt::ControlModifier){
             double factor = 1.0 + delta.y() * 0.01;
             for(int i = 0; i < m_selectedShapes.size(); ++i){
@@ -262,13 +232,14 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
             for(Shap *s : m_selectedShapes)
                 s->rotate(angle);
         }else{
+
             moveSelectedBy(delta);
         }
-        m_endPoint = event->pos();
+        m_transformStartPoint = event->pos();
         update();
         return;
     }
-    if(m_currentCategory == ToolCategory::Selection && !m_selectedShapes.isEmpty()){
+    if(m_currentCategory == ToolCategory::Selection && !m_selectedShapes.isEmpty() && (event->buttons() & Qt::LeftButton)){
         QPoint delta = event->pos() - m_dragStart;
         moveSelectedBy(delta);
         m_dragStart = event->pos();
@@ -295,44 +266,6 @@ void Canvas::mouseReleaseEvent(QMouseEvent *event)
         }else if(m_transforming){
             m_transforming = false;
         }
-
-
-
-        m_drawing = false;
-        QString type = m_shapeCombo->currentText();
-        Shap *shape = nullptr;
-        QColor defaultLine = Qt::black, defaultFill = Qt::transparent;
-
-        if (type == "Rectangle")
-            shape = new Rectangle(m_startPoint, m_endPoint, defaultLine);
-        else if (type == "Triangle")
-            shape = new Triangle(m_startPoint, m_endPoint,
-                                 QPoint(m_startPoint.x() - (m_endPoint.x() - m_startPoint.x()), m_endPoint.y()),
-                                 defaultLine);
-        else if (type == "Circle")
-            shape = new Circle(m_startPoint, m_endPoint, defaultLine);
-        else if (type == "Ellipse")
-            shape = new Ellipse(m_startPoint, m_endPoint, defaultLine);
-        else if (type == "Hexagon")
-            shape = new Hexagon(m_startPoint, m_endPoint, defaultLine);
-        else if (type == "Rhomb")
-            shape = new Rhomb(m_startPoint, m_endPoint, defaultLine);
-        else if (type == "Square")
-            shape = new Square(m_startPoint, m_endPoint, defaultLine);
-        else if (type == "5‑star")
-            shape = new Stars(m_startPoint, m_endPoint, 5, defaultLine);
-        else if (type == "6‑star")
-            shape = new Stars(m_startPoint, m_endPoint, 6, defaultLine);
-        else if (type == "8‑star")
-            shape = new Stars(m_startPoint, m_endPoint, 8, defaultLine);
-
-        if (shape) {
-            shape->setLineWidth(m_currentLineWidth);
-            shape->setLineColor(m_currentLineColor);
-            shape->setFillColor(m_currentFillColor);
-            m_layerManager->layer(0)->addShape(shape); // add to default layer
-        }
-        update();
     }
 }
 
@@ -344,7 +277,7 @@ void Canvas::handleSelectionPress(QMouseEvent *event)
     if(hit){
         if(event->modifiers() & Qt::ControlModifier){
             toggleSelection(hit);
-        }else{
+        }else if (!m_selectedShapes.contains(hit)) {
             addToSelection(hit, true);
         }
 
@@ -388,7 +321,9 @@ void Canvas::finishDrawing(){
         shape->setLineWidth(m_currentLineWidth);
         shape->setLineColor(m_currentLineColor);
         shape->setFillColor(m_currentFillColor);
-        m_layerManager->layer(0)->addShape(shape);
+        Layer* target = m_layerManager->layer(m_activeLayerIndex);
+        if(target)
+            target->addShape(shape);
     }
 }
 
@@ -421,60 +356,7 @@ void Canvas::paintEvent(QPaintEvent* event) {
             temp->drawShape(painter);
             delete temp;
         }
-        // QString type = m_shapeCombo->currentText();
-        // if (type == "Rectangle") {
-        //     Rectangle temp(m_startPoint, m_endPoint, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "Triangle") {
-        //     Triangle temp(m_startPoint, m_endPoint,
-        //                   QPoint(m_startPoint.x() - (m_endPoint.x() - m_startPoint.x()), m_endPoint.y()),
-        //                   m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "Circle") {
-        //     Circle temp(m_startPoint, m_endPoint, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "Ellipse") {
-        //     Ellipse temp(m_startPoint, m_endPoint, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "Hexagon") {
-        //     Hexagon temp(m_startPoint, m_endPoint, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "Rhomb") {
-        //     Rhomb temp(m_startPoint, m_endPoint, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "Square") {
-        //     Square temp(m_startPoint, m_endPoint, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "5-star") {
-        //     Stars temp(m_startPoint, m_endPoint, 5, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "6-star") {
-        //     Stars temp(m_startPoint, m_endPoint, 6, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // } else if (type == "8-star") {
-        //     Stars temp(m_startPoint, m_endPoint, 8, m_currentLineColor);
-        //     temp.setLineWidth(m_currentLineWidth);
-        //     temp.setFillColor(m_currentFillColor);
-        //     temp.draw(painter);
-        // }
+
     }
     if(m_rubberBandActive){
         painter.save();
@@ -600,4 +482,9 @@ Shap* Canvas::createShape(ShapeType type, const QPoint &start, const QPoint &end
     default:
         return nullptr;
     }
+}
+
+void Canvas::setActiveLayer(int index){
+    if(index >= 0 && index < m_layerManager->layerCount())
+        m_activeLayerIndex = index;
 }

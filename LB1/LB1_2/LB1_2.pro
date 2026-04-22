@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     canvas.cpp \
     circle.cpp \
+    command.cpp \
     ellipse.cpp \
     hexagon.cpp \
     layer.cpp \
@@ -29,6 +30,7 @@ SOURCES += \
 HEADERS += \
     canvas.h \
     circle.h \
+    command.h \
     ellipse.h \
     hexagon.h \
     layer.h \

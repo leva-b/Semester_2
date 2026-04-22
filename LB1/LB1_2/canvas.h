@@ -15,7 +15,6 @@ enum class ToolCategory {
     Drawing
 };
 
-
 enum class ShapeType {
     Rectangle,
     Triangle,
@@ -28,6 +27,7 @@ enum class ShapeType {
     Star6,
     Star8
 };
+
 class Canvas: public QWidget
 {
 protected:
@@ -37,12 +37,14 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 public:
+
     Canvas(QWidget *parent = nullptr);
     static bool isPointInWindow(const QWidget *widget, const QPoint &point) {
         QRect windowRect = widget->rect();
         return !windowRect.contains(point);
     }
 
+    void setActiveLayer(int index);
     void setLineWidth(int width);
     void setLineColor(const QColor &color);
     void setFillColor(const QColor &color);
@@ -101,7 +103,7 @@ private:
     QColor m_currentLineColor;
     QColor m_currentFillColor;
     int m_currentLineWidth;
-
+    int m_activeLayerIndex = 0;
 private slots:
     void chooseLineColor();
     void chooseFillColor();

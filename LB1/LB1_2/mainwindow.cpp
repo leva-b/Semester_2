@@ -36,35 +36,50 @@ MainWindow::MainWindow(QWidget *parent)
     layerDock->setWidget(layerPanel);
     addDockWidget(Qt::RightDockWidgetArea, layerDock);
 
+    connect(m_canvas->layerManager(), &LayerManager::layersChanged, this, &MainWindow::refreshLayerList);
     connect(m_addLayerBtn, &QPushButton::clicked, this, &MainWindow::addLayer);
     connect(m_removeLayerBtn, &QPushButton::clicked, this, &MainWindow::removeLayer);
     connect(m_upBtn, &QPushButton::clicked, this, &MainWindow::moveLayerUp);
     connect(m_downBtn, &QPushButton::clicked, this, &MainWindow::moveLayerDown);
     connect(m_moveToLayerBtn, &QPushButton::clicked, this, &MainWindow::moveSelectedToCurrentLayer);
-    connect(m_layerList, &QListWidget::currentRowChanged, this, &MainWindow::refreshLayerList);
+    connect(m_layerList, &QListWidget::currentRowChanged, this,  [this](int row) {
+        if (row >= 0)
+            m_canvas->setActiveLayer(row);
+    });
 
     refreshLayerList();
+    if (m_canvas->layerManager()->layerCount() > 0) {
+        m_layerList->setCurrentRow(0);
+        m_canvas->setActiveLayer(0);
+    }
 }
 
-void MainWindow::refreshLayerList()
-{
+void MainWindow::refreshLayerList() {
+    int oldRow = m_layerList->currentRow();
     m_layerList->clear();
-    for (int i = 0; i < m_canvas->layerManager()->layerCount(); ++i)
+    int count = m_canvas->layerManager()->layerCount();
+    for (int i = 0; i < count; ++i)
         m_layerList->addItem(m_canvas->layerManager()->layer(i)->name());
+
+    if (count > 0) {
+        int newRow = qBound(0, oldRow, count - 1);
+        m_layerList->setCurrentRow(newRow);
+        m_canvas->setActiveLayer(newRow);
+    } else {
+        m_canvas->setActiveLayer(-1);
+    }
 }
 
 void MainWindow::addLayer()
 {
-    m_canvas->layerManager()->addLayer("New Layer");
-    refreshLayerList();
+    m_canvas->layerManager()->addLayer();
 }
 
 void MainWindow::removeLayer()
 {
     int idx = m_layerList->currentRow();
-    if (idx >= 0)
+    if (idx >= 0 && m_canvas->layerManager()->layerCount() > 1)
         m_canvas->layerManager()->removeLayer(idx);
-    refreshLayerList();
 }
 
 void MainWindow::moveLayerUp()
@@ -72,7 +87,6 @@ void MainWindow::moveLayerUp()
     int idx = m_layerList->currentRow();
     if (idx > 0) {
         m_canvas->layerManager()->moveLayerUp(idx);
-        refreshLayerList();
         m_layerList->setCurrentRow(idx - 1);
     }
 }
@@ -82,7 +96,6 @@ void MainWindow::moveLayerDown()
     int idx = m_layerList->currentRow();
     if (idx >= 0 && idx < m_canvas->layerManager()->layerCount() - 1) {
         m_canvas->layerManager()->moveLayerDown(idx);
-        refreshLayerList();
         m_layerList->setCurrentRow(idx + 1);
     }
 }
@@ -97,3 +110,4 @@ void MainWindow::moveSelectedToCurrentLayer()
         m_canvas->layerManager()->moveShapeToLayer(s, targetIdx);
     m_canvas->update();
 }
+

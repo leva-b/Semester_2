@@ -45,7 +45,8 @@ QVector<QPoint> Hexagon::calculateVertices(int R)
 }
 
 void Hexagon::draw(QPainter& painter) {
-    painter.setPen(QPen(m_lineColor, 3));
+    painter.setPen(QPen(m_lineColor, m_lineWidth));
+    painter.setBrush(m_fillColor);
     QPolygon polygon;
     for(const QPoint& vertice: vertices){
         polygon << (vertice - m_position)*m_scaleFactor + m_position;

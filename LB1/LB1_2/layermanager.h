@@ -12,7 +12,7 @@ public:
     explicit LayerManager(QObject *parent = nullptr);
     ~LayerManager();
 
-    void addLayer(const QString &name = "New Layer");
+    void addLayer();
     void removeLayer(int index);
     void moveLayerUp(int index);
     void moveLayerDown(int index);
@@ -33,6 +33,8 @@ signals:
     void layersChanged();
 
 private:
+
+    QString generateLayerName() const;
     QList<Layer*> m_layers;
 };
 

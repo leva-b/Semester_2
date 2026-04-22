@@ -18,7 +18,9 @@ public:
     void addShape(Shap *shape);
     void removeShape(Shap *shape);
     bool contains(Shap *shape) const;
-
+    void takeShapes() {
+        m_shapes.clear();   // очищаем список, не удаляя объекты
+    }
     void clear();
 
 private:
