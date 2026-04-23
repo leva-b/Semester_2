@@ -12,7 +12,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     m_canvas = new Canvas(this);
     setCentralWidget(m_canvas);
+    QMenu* editMenu = menuBar()->addMenu(tr("&Edit"));
+    QAction* undoAction = m_canvas->undoStack()->createUndoAction(this, tr("&Undo"));
+    undoAction->setShortcut(QKeySequence::Undo); // Ctrl+Z
+    QAction* redoAction = m_canvas->undoStack()->createRedoAction(this, tr("&Redo"));
+    redoAction->setShortcut(Qt::CTRL | Qt::Key_Y);
 
+    connect(m_canvas->undoStack(), &QUndoStack::canRedoChanged, redoAction, &QAction::setEnabled);
+    connect(m_canvas->undoStack(), &QUndoStack::canUndoChanged, undoAction, &QAction::setEnabled);
+
+    editMenu->addAction(undoAction);
+    editMenu->addAction(redoAction);
     // Layer dock
     QDockWidget *layerDock = new QDockWidget("Layers", this);
     QWidget *layerPanel = new QWidget;

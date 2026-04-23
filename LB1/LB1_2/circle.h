@@ -7,6 +7,7 @@ class Circle: public Shap
     bool contains(const QPoint &point) const override;
     void change();
 public:
+    QString typeName() const override { return "Circle"; }
     QMenu* createContextMenu(QWidget *parent) override;
     void draw(QPainter& painter) override;
     Circle(const QPoint& start, const QPoint& end, const QColor& color);

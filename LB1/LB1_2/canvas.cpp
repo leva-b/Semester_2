@@ -19,9 +19,16 @@
 #include <QMenu>
 #include <QToolBar>
 #include <QActionGroup>
+#include "command/addshapecommand.h"
+#include "command/moveshapecommand.h"
+#include "command/removeshapecommand.h"
+#include "command/scaleshapecommand.h"
+#include "command/propertychangecmd.h"
+#include "command/rotateshapecommand.h"
 
 Canvas::Canvas(QWidget *parent)
     : QWidget(parent)
+    , m_undoStack(new QUndoStack(this))
     , m_drawing(false)
     , m_layerManager(new LayerManager(this))
     , m_currentLineColor(Qt::black)
@@ -32,7 +39,7 @@ Canvas::Canvas(QWidget *parent)
 
     // Создание UI
     m_shapeCombo = new QComboBox(this);
-    m_shapeCombo->addItems({"Rectangle", "Triangle", "Circle", "Ellipse",
+    m_shapeCombo->addItems({"Rectangle", "Triangle", "Circle", "Ellipse", "Polyline",
                             "Hexagon", "Rhomb", "Square", "5-star", "6-star", "8-star"});
     m_shapeCombo->setEnabled(false);
 
@@ -115,26 +122,62 @@ Canvas::Canvas(QWidget *parent)
 
 void Canvas::setLineWidth(int width)
 {
+    if (m_selectedShapes.isEmpty()) {
+        m_currentLineWidth = width;
+        return;
+    }
+
+    QUndoCommand* macro = new QUndoCommand(tr("Change line width"));
+    for (Shap* s : m_selectedShapes) {
+        new PropertyChangeCommand<int>(
+            this, s, width,
+            [](Shap* sh, int w) { sh->setLineWidth(w); },
+            [](const Shap* sh) { return sh->lineWidth(); },
+            tr("Line Width"), macro
+            );
+    }
+    m_undoStack->push(macro);
     m_currentLineWidth = width;
-    for (Shap *s : m_selectedShapes)
-        s->setLineWidth(width);
-    update();
 }
 
 void Canvas::setLineColor(const QColor &color)
 {
+    if (m_selectedShapes.isEmpty()) {
+        m_currentLineColor = color;
+        return;
+    }
+
+    QUndoCommand* macro = new QUndoCommand(tr("Change line color"));
+    for (Shap* s : m_selectedShapes) {
+        new PropertyChangeCommand<QColor>(
+            this, s, color,
+            [](Shap* sh, const QColor& c) { sh->setLineColor(c); },
+            [](const Shap* sh) { return sh->lineColor(); },
+            tr("Line Color"), macro
+            );
+    }
+    m_undoStack->push(macro);
     m_currentLineColor = color;
-    for (Shap *s : m_selectedShapes)
-        s->setLineColor(color);
-    update();
 }
 
 void Canvas::setFillColor(const QColor &color)
 {
+    if (m_selectedShapes.isEmpty()) {
+        m_currentFillColor = color;
+        return;
+    }
+
+    QUndoCommand* macro = new QUndoCommand(tr("Change fill color"));
+    for (Shap* s : m_selectedShapes) {
+        new PropertyChangeCommand<QColor>(
+            this, s, color,
+            [](Shap* sh, const QColor& c) { sh->setFillColor(c); },
+            [](const Shap* sh) { return sh->fillColor(); },
+            tr("Fill Color"), macro
+            );
+    }
+    m_undoStack->push(macro);
     m_currentFillColor = color;
-    for (Shap *s : m_selectedShapes)
-        s->setFillColor(color);
-    update();
 }
 
 void Canvas::chooseLineColor()
@@ -151,10 +194,27 @@ void Canvas::chooseFillColor()
 
 void Canvas::deleteSelectedShapes()
 {
-    for (Shap *s : m_selectedShapes)
-        m_layerManager->removeShape(s);
+    if (m_selectedShapes.isEmpty())
+        return;
+
+    QUndoCommand* macro = new QUndoCommand(tr("Delete %1 shapes").arg(m_selectedShapes.size()));
+    for (Shap* s : m_selectedShapes) {
+        int layerIdx = findLayerIndex(s);
+        new RemoveShapeCommand(this, s, layerIdx, macro);
+    }
+    m_undoStack->push(macro);
     m_selectedShapes.clear();
     update();
+}
+
+int Canvas::findLayerIndex(Shap* shape) const
+{
+    for (int i = 0; i < m_layerManager->layerCount(); ++i) {
+        Layer* layer = m_layerManager->layer(i);
+        if (layer && layer->contains(shape))
+            return i;
+    }
+    return -1;
 }
 
 void Canvas::copySelected()
@@ -191,18 +251,41 @@ void Canvas::mousePressEvent(QMouseEvent *event)
             handleTransformationPress(event);
             break;
         case ToolCategory::Drawing:
-            startDrawing(event->pos());
+            if (m_currentShapeType == ShapeType::Polyline) {
+                if (!m_buildingPolyline) {
+                    m_tempPolyline = new Polyline({event->pos()}, m_currentLineColor);
+                    m_buildingPolyline = true;
+                } else {
+                    m_tempPolyline->addPoint(event->pos());
+                }
+                update();
+            } else {
+                startDrawing(event->pos());
+            }
             break;
         }
     }else if(event->button() == Qt::RightButton){
-        Shap *hit = m_layerManager->shapeAt(event->pos());
-        if(hit){
-            QMenu *menu = hit->createContextMenu(this);
-            QAction *selected = menu->exec(event->globalPos());
-            if(selected) hit->onContextMenuAction(selected->text());
-            delete menu;
-            update();
+        if (m_buildingPolyline) {
+            finishPolyline();
+        } else {
+            Shap *hit = m_layerManager->shapeAt(event->pos());
+            if (hit) {
+                QMenu *menu = hit->createContextMenu(this);
+                QAction *selected = menu->exec(event->globalPos());
+                if (selected) hit->onContextMenuAction(selected->text());
+                delete menu;
+                update();
+            }
         }
+    }
+}
+
+void Canvas::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && m_buildingPolyline) {
+        finishPolyline();
+    } else {
+        QWidget::mouseDoubleClickEvent(event);
     }
 }
 
@@ -213,6 +296,10 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
         m_endPoint = event->pos();
         update();
         return;
+    }
+    if (m_buildingPolyline && m_tempPolyline) {
+        m_lastCursorPos = event->pos();
+        update();
     }
     if(m_rubberBandActive){
         m_selectionRubberBandRect.setBottomRight(event->pos());
@@ -249,24 +336,101 @@ void Canvas::mouseMoveEvent(QMouseEvent *event)
 
 void Canvas::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton){
-        if(m_drawing) {
-            finishDrawing();
-            m_drawing = false;
-            update();
-        }else if (m_rubberBandActive){
-            QRect rect = m_selectionRubberBandRect.normalized();
-            QList<Shap*> shapesInRect = m_layerManager->shapesInRect(rect);
-            if(!(QGuiApplication::keyboardModifiers() & Qt::ControlModifier))
-                clearSelection();
-            for(Shap *s : shapesInRect)
-                addToSelection(s, false);
-            m_rubberBandActive = false;
-            update();
-        }else if(m_transforming){
-            m_transforming = false;
-        }
+    if (event->button() != Qt::LeftButton)
+        return;
+
+    if (m_drawing) {
+        finishDrawing();
+        m_drawing = false;
+        update();
+        return;
     }
+
+    if (m_rubberBandActive) {
+        QRect rect = m_selectionRubberBandRect.normalized();
+        QList<Shap*> shapesInRect = m_layerManager->shapesInRect(rect);
+        if (!(QGuiApplication::keyboardModifiers() & Qt::ControlModifier))
+            clearSelection();
+        for (Shap* s : shapesInRect)
+            addToSelection(s, false);
+        m_rubberBandActive = false;
+        update();
+        return;
+    }
+
+    if (m_moving && !m_selectedShapes.isEmpty() && !m_moveDelta.isNull()) {
+        moveSelectedBy(-m_moveDelta);
+
+        if (m_selectedShapes.size() == 1) {
+            m_undoStack->push(new MoveShapeCommand(this, m_selectedShapes.first(), m_moveDelta));
+        } else {
+            QUndoCommand* macro = new QUndoCommand(tr("Move %1 shapes").arg(m_selectedShapes.size()));
+            for (Shap* s : m_selectedShapes) {
+                new MoveShapeCommand(this, s, m_moveDelta, macro);
+            }
+            m_undoStack->push(macro);
+        }
+
+        m_moving = false;
+        m_moveDelta = QPoint(0, 0);
+        update();
+        return;
+    }
+
+    if (m_transforming && m_currentCategory == ToolCategory::Transformation) {
+        QList<double> finalScales, finalAngles;
+        QList<QPoint> finalCenters;
+        for (Shap* s : m_selectedShapes) {
+            finalScales.append(s->scaleFactor());
+            finalAngles.append(s->rotation());
+            finalCenters.append(s->center());
+        }
+
+        for (int i = 0; i < m_selectedShapes.size(); ++i) {
+            Shap* s = m_selectedShapes[i];
+            double curScale = s->scaleFactor();
+            double initScale = m_initialScales[i];
+            if (!qFuzzyCompare(curScale, initScale))
+                s->scale(initScale / curScale, s->center());
+
+            double curAngle = s->rotation();
+            double initAngle = m_initialAngles[i];
+            if (!qFuzzyCompare(curAngle, initAngle))
+                s->rotate(initAngle - curAngle);
+        }
+
+        if (!m_moveDelta.isNull()) {
+            moveSelectedBy(-m_moveDelta);
+        }
+
+        QUndoCommand* macro = new QUndoCommand(tr("Transform shapes"));
+        for (int i = 0; i < m_selectedShapes.size(); ++i) {
+            Shap* s = m_selectedShapes[i];
+            double scaleFactor = finalScales[i] / m_initialScales[i];
+            if (!qFuzzyCompare(scaleFactor, 1.0))
+                new ScaleShapeCommand(this, s, scaleFactor, macro);
+            double angleDelta = finalAngles[i] - m_initialAngles[i];
+            if (!qFuzzyIsNull(angleDelta))
+                new RotateShapeCommand(this, s, angleDelta, macro);
+            QPoint moveDelta = finalCenters[i] - (finalCenters[i] - m_moveDelta); // = m_moveDelta
+            if (!moveDelta.isNull())
+                new MoveShapeCommand(this, s, moveDelta, macro);
+        }
+
+        if (macro->childCount() > 0)
+            m_undoStack->push(macro);
+        else
+            delete macro;
+
+        m_transforming = false;
+        m_moving = false;
+        m_moveDelta = QPoint(0, 0);
+        update();
+        return;
+    }
+
+    m_moving = false;
+    m_transforming = false;
 }
 
 void Canvas::handleSelectionPress(QMouseEvent *event)
@@ -274,44 +438,81 @@ void Canvas::handleSelectionPress(QMouseEvent *event)
     QPoint pos = event->pos();
     Shap *hit = m_layerManager->shapeAt(pos);
 
-    if(hit){
-        if(event->modifiers() & Qt::ControlModifier){
+    if (hit) {
+        if (event->modifiers() & Qt::ControlModifier) {
             toggleSelection(hit);
-        }else if (!m_selectedShapes.contains(hit)) {
+        } else if (!m_selectedShapes.contains(hit)) {
             addToSelection(hit, true);
         }
-
         m_dragStart = pos;
-        m_selectedShapesStartPos.clear();
-        for(Shap *s : m_selectedShapes)
-            m_selectedShapesStartPos.append(s->center());
-    }else{
-        if(!(event->modifiers() & Qt::ControlModifier))
+        m_moveDelta = QPoint(0, 0);
+        m_moving = true;
+        m_transforming = false;
+    } else {
+        if (!(event->modifiers() & Qt::ControlModifier))
             clearSelection();
         m_rubberBandActive = true;
         m_selectionRubberBandRect = QRect(pos, pos);
+        m_moving = false;
     }
 }
 
-void Canvas::handleTransformationPress(QMouseEvent *event){
-    if (m_selectedShapes.isEmpty())
-        return;
-    m_transforming = true;
-    m_transformStartPoint = event->pos();
+void Canvas::handleTransformationPress(QMouseEvent *event)
+{
+    QPoint pos = event->pos();
+    Shap *hit = m_layerManager->shapeAt(pos);
 
-    m_selectedShapesStartScale.clear();
-    m_selectedShapesStartRot.clear();
-    for(Shap *s : m_selectedShapes){
-        m_selectedShapesStartScale.append(s->scaleFactor());
-        m_selectedShapesStartRot.append(s->rotation());
+    if (hit) {
+        m_dragStart = pos;
+        m_moveDelta = QPoint(0, 0);
+        m_moving = true;
     }
-    update();
+
+    if (!m_selectedShapes.isEmpty()) {
+        m_transforming = true;
+        m_transformStartPoint = pos;
+        m_initialScales.clear();
+        m_initialAngles.clear();
+        for (Shap* s : m_selectedShapes) {
+            m_initialScales.append(s->scaleFactor());
+            m_initialAngles.append(s->rotation());
+        }
+    }
 }
 
 void Canvas::startDrawing(const QPoint &pos){
-    m_drawing = true;
-    m_startPoint = pos;
-    m_endPoint = pos;
+    if (m_currentShapeType == ShapeType::Polyline) {
+        if (!m_buildingPolyline) {
+            m_tempPolyline = new Polyline({pos}, m_currentLineColor);
+            m_buildingPolyline = true;
+        } else {
+            m_tempPolyline->addPoint(pos);
+        }
+        update();
+    } else {
+        m_drawing = true;
+        m_startPoint = pos;
+        m_endPoint = pos;
+        update();
+    };
+}
+
+void Canvas::finishPolyline()
+{
+    if (m_tempPolyline && m_tempPolyline->points().size() >= 2) {
+        m_tempPolyline->setLineWidth(m_currentLineWidth);
+        m_tempPolyline->setFillColor(m_currentFillColor);
+        Layer* target = m_layerManager->layer(m_activeLayerIndex);
+        if (target) {
+            m_undoStack->push(new AddShapeCommand(this, m_tempPolyline, m_activeLayerIndex));
+        } else {
+            delete m_tempPolyline;
+        }
+    } else {
+        delete m_tempPolyline;
+    }
+    m_tempPolyline = nullptr;
+    m_buildingPolyline = false;
     update();
 }
 
@@ -321,9 +522,7 @@ void Canvas::finishDrawing(){
         shape->setLineWidth(m_currentLineWidth);
         shape->setLineColor(m_currentLineColor);
         shape->setFillColor(m_currentFillColor);
-        Layer* target = m_layerManager->layer(m_activeLayerIndex);
-        if(target)
-            target->addShape(shape);
+        m_undoStack->push(new AddShapeCommand(this, shape, m_activeLayerIndex));
     }
 }
 
@@ -347,7 +546,15 @@ void Canvas::paintEvent(QPaintEvent* event) {
         }
     }
 
-    if (m_drawing) {
+    if (m_buildingPolyline && m_tempPolyline) {
+        m_tempPolyline->draw(painter);
+        if (!m_tempPolyline->points().isEmpty()) {
+            QPoint last = m_tempPolyline->points().last();
+            QPoint cursor = mapFromGlobal(QCursor::pos());
+            painter.setPen(QPen(m_currentLineColor, m_currentLineWidth, Qt::DashLine));
+            painter.drawLine(last, cursor);
+        }
+    } else if (m_drawing) {
         Shap *temp = createShape(m_currentShapeType, m_startPoint, m_endPoint);
         if(temp){
             temp->setLineWidth(m_currentLineWidth);
@@ -454,6 +661,7 @@ ShapeType Canvas::shapeTypeFromString(const QString &type) const
     if (type == "5-star") return ShapeType::Star5;
     if (type == "6-star") return ShapeType::Star6;
     if (type == "8-star") return ShapeType::Star8;
+    if (type == "Polyline") return ShapeType::Polyline;
     return ShapeType::Rectangle;
 }
 
@@ -479,6 +687,8 @@ Shap* Canvas::createShape(ShapeType type, const QPoint &start, const QPoint &end
         return new Stars(start, end, 6, m_currentLineColor);
     case ShapeType::Star8:
         return new Stars(start, end, 8, m_currentLineColor);
+    case ShapeType::Polyline:
+        return new Polyline({start, end}, m_currentLineColor);
     default:
         return nullptr;
     }

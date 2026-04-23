@@ -5,6 +5,7 @@
 class Rhomb: public Polygon
 {
 public:
+    QString typeName() const override { return "Rhomb"; }
     Rhomb(const QPoint& start, const QPoint& end, const QColor& color = Qt::blue);
     void draw(QPainter& painter) override;
     QMenu* createContextMenu(QWidget *parent)override;

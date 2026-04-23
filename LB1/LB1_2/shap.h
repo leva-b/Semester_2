@@ -43,6 +43,7 @@ protected:
 
 
 public:
+    virtual QString typeName() const = 0;
     Shap(const Shap&) = default;
     Shap& operator=(const Shap&) = default;
     explicit Shap(const QColor &color){

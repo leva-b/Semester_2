@@ -7,6 +7,7 @@
 class Rectangle : public Polygon {
 
 public:
+    QString typeName() const override { return "Rectangle"; }
     Rectangle(const QPoint& topLeft, const QPoint& bottomRight, const QColor& color = Qt::blue);
     void draw(QPainter& painter) override;
     void scale(double factor, const QPoint& center) override;

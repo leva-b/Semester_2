@@ -12,6 +12,11 @@ SOURCES += \
     canvas.cpp \
     circle.cpp \
     command.cpp \
+    command/addshapecommand.cpp \
+    command/moveshapecommand.cpp \
+    command/removeshapecommand.cpp \
+    command/rotateshapecommand.cpp \
+    command/scaleshapecommand.cpp \
     ellipse.cpp \
     hexagon.cpp \
     layer.cpp \
@@ -20,17 +25,24 @@ SOURCES += \
     mainwindow.cpp \
     parameterdialog.cpp \
     polygon.cpp \
+    polyline.cpp \
     rectangle.cpp \
     rhomb.cpp \
     shape.cpp \
     square.cpp \
     stars.cpp \
-    triangle.cpp
+    triangle.cpp\
 
 HEADERS += \
     canvas.h \
     circle.h \
     command.h \
+    command/addshapecommand.h \
+    command/moveshapecommand.h \
+    command/propertychangecmd.h \
+    command/removeshapecommand.h \
+    command/rotateshapecommand.h \
+    command/scaleshapecommand.h \
     ellipse.h \
     hexagon.h \
     layer.h \
@@ -38,6 +50,7 @@ HEADERS += \
     mainwindow.h \
     parameterdialog.h \
     polygon.h \
+    polyline.h \
     rectangle.h \
     rhomb.h \
     shap.h \

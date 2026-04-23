@@ -5,6 +5,8 @@
 class Stars: public Polygon
 {
 public:
+    QString typeName() const override { return "Stars"; }
+
     QMenu* createContextMenu(QWidget *parent)override;
     void change();
     Stars(const QPoint& startPosition, const QPoint& end, int rays, const QColor& color);

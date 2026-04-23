@@ -10,6 +10,7 @@ class Ellipse: public Shap
     void changeRadius();
     void change();
 public:
+    QString typeName() const override { return "Ellipse"; }
     void draw(QPainter& painter) override;
     Ellipse(const QPoint& start, const QPoint& end, const QColor& color);
     QMenu* createContextMenu(QWidget *parent) override;

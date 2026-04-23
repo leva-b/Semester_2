@@ -7,6 +7,7 @@
 class Hexagon: public Polygon
 {
 public:
+    QString typeName() const override { return "Hexagon"; }
     explicit Hexagon(const QPoint& start, const QPoint& end, const QColor& color);
     void draw(QPainter& painter) override;
     double area() const override;
